@@ -1,0 +1,62 @@
+# Core Data Processing
+pandas==2.0.3
+numpy==1.24.3
+scipy==1.11.1
+
+# Big Data Processing
+pyspark==3.4.1
+findspark==2.0.1
+
+# Database
+psycopg2-binary==2.9.7
+pymongo==4.4.1
+sqlalchemy==2.0.19
+
+# Machine Learning
+scikit-learn==1.3.0
+tensorflow==2.13.0
+torch==2.0.1
+xgboost==1.7.6
+
+# Natural Language Processing
+nltk==3.8.1
+spacy==3.6.1
+transformers==4.32.1
+textblob==0.17.1
+
+# Data Visualization
+matplotlib==3.7.2
+seaborn==0.12.2
+plotly==5.15.0
+bokeh==3.2.2
+
+# Web Framework & API
+fastapi==0.101.1
+uvicorn==0.23.2
+streamlit==1.25.0
+dash==2.11.1
+
+# Time Series Analysis
+prophet==1.1.4
+statsmodels==0.14.0
+
+# Data Quality & Validation
+great-expectations==0.17.8
+pandera==0.17.2
+
+# Utilities
+python-dotenv==1.0.0
+pyyaml==6.0.1
+tqdm==4.65.0
+click==8.1.7
+
+# Development Tools
+jupyter==1.0.0
+jupyterlab==4.0.7
+ipykernel==6.25.0
+black==23.7.0
+flake8==6.0.0
+pytest==7.4.0
+
+# Docker & Deployment
+gunicorn==21.2.0

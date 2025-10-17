@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: job_analytics_postgres
+    environment:
+      POSTGRES_DB: job_analytics
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - job_analytics_network
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:6.0
+    container_name: job_analytics_mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - job_analytics_network
+
+  # Jupyter Notebook
+  jupyter:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.jupyter
+    container_name: job_analytics_jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/workspace
+      - ./notebooks:/workspace/notebooks
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    networks:
+      - job_analytics_network
+    depends_on:
+      - postgres
+      - mongodb
+
+  # Streamlit Dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dashboard
+    container_name: job_analytics_dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/workspace
+    environment:
+      - DATABASE_URL=postgresql://admin:password123@postgres:5432/job_analytics
+    networks:
+      - job_analytics_network
+    depends_on:
+      - postgres
+      - mongodb
+
+  # FastAPI Backend
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: job_analytics_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/workspace
+    environment:
+      - DATABASE_URL=postgresql://admin:password123@postgres:5432/job_analytics
+      - MONGODB_URL=mongodb://admin:password123@mongodb:27017/job_analytics
+    networks:
+      - job_analytics_network
+    depends_on:
+      - postgres
+      - mongodb
+
+  # Apache Spark (Optional for big data processing)
+  spark-master:
+    image: bitnami/spark:3.4
+    container_name: job_analytics_spark_master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    networks:
+      - job_analytics_network
+
+  spark-worker:
+    image: bitnami/spark:3.4
+    container_name: job_analytics_spark_worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    networks:
+      - job_analytics_network
+    depends_on:
+      - spark-master
+
+volumes:
+  postgres_data:
+  mongodb_data:
+
+networks:
+  job_analytics_network:
+    driver: bridge

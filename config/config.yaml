@@ -1,0 +1,175 @@
+# Job Analytics Configuration File
+
+# Database Configuration
+database:
+  postgres:
+    host: localhost
+    port: 5432
+    database: job_analytics
+    username: admin
+    password: password123
+    pool_size: 10
+    max_overflow: 20
+  
+  mongodb:
+    host: localhost
+    port: 27017
+    database: job_analytics
+    username: admin
+    password: password123
+
+# Data Sources Configuration
+data_sources:
+  glassdoor:
+    file_path: "./data/DataAnalyst.csv"
+    encoding: "utf-8"
+    delimiter: ","
+    columns:
+      - job_title
+      - salary_estimate
+      - job_description
+      - rating
+      - company_name
+      - location
+      - headquarters
+      - size
+      - founded
+      - type_of_ownership
+      - industry
+      - sector
+      - revenue
+      - competitors
+      - easy_apply
+  
+  monster:
+    file_path: "./data/monster_com-job_sample.csv"
+    encoding: "utf-8"
+    delimiter: ","
+    columns:
+      - country
+      - country_code
+      - date_added
+      - has_expired
+      - job_board
+      - job_description
+      - job_title
+      - job_type
+      - location
+      - organization
+      - page_url
+      - salary
+      - sector
+      - uniq_id
+  
+  naukri:
+    file_path: "./data/naukri_com-job_sample.csv"
+    encoding: "utf-8"
+    delimiter: ","
+    columns:
+      - company
+      - education
+      - experience
+      - industry
+      - jobdescription
+      - jobid
+      - joblocation_address
+      - jobtitle
+      - numberofpositions
+      - payrate
+      - postdate
+      - site_name
+      - skills
+      - uniq_id
+
+# Processing Configuration
+processing:
+  batch_size: 1000
+  max_workers: 4
+  chunk_size: 10000
+  
+  # Data cleaning rules
+  cleaning:
+    remove_duplicates: true
+    handle_missing_values: "drop"  # drop, fill, interpolate
+    text_cleaning: true
+    normalize_text: true
+  
+  # Feature engineering
+  features:
+    extract_skills: true
+    extract_salary_range: true
+    extract_location_info: true
+    extract_company_size: true
+
+# Machine Learning Configuration
+ml:
+  models:
+    salary_prediction:
+      algorithm: "random_forest"
+      test_size: 0.2
+      random_state: 42
+      n_estimators: 100
+      max_depth: 10
+    
+    skills_clustering:
+      algorithm: "kmeans"
+      n_clusters: 10
+      random_state: 42
+    
+    sentiment_analysis:
+      model: "vader"
+      threshold: 0.1
+  
+  preprocessing:
+    text_vectorization: "tfidf"
+    max_features: 5000
+    ngram_range: [1, 2]
+
+# API Configuration
+api:
+  host: "0.0.0.0"
+  port: 8000
+  debug: true
+  title: "Job Analytics API"
+  description: "API for Job Market Analytics"
+  version: "1.0.0"
+  
+  # CORS settings
+  cors:
+    origins: ["*"]
+    methods: ["GET", "POST", "PUT", "DELETE"]
+    headers: ["*"]
+
+# Dashboard Configuration
+dashboard:
+  host: "0.0.0.0"
+  port: 8501
+  title: "Job Market Analytics Dashboard"
+  theme: "light"
+  
+  # Chart configurations
+  charts:
+    default_height: 400
+    color_scheme: "plotly"
+    animation: true
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "./logs/app.log"
+  max_size: "10MB"
+  backup_count: 5
+
+# Security Configuration
+security:
+  secret_key: "your-secret-key-here"
+  jwt_secret: "your-jwt-secret-here"
+  token_expire_minutes: 30
+  password_min_length: 8
+
+# Performance Configuration
+performance:
+  cache_ttl: 3600  # 1 hour
+  max_memory_usage: "2GB"
+  enable_profiling: false
