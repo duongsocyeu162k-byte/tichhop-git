@@ -2,18 +2,15 @@
 Trend Analyzer Module
 ====================
 
-Analyzes trends in job market data including job growth, 
-industry trends, and geographic patterns.
+Handles trend analysis and insights generation for job market data.
 """
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from typing import Dict, List, Optional, Tuple
 import logging
-from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any
 from collections import Counter
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -25,333 +22,358 @@ class TrendAnalyzer:
     
     def __init__(self):
         """Initialize the TrendAnalyzer."""
-        self.trend_data = {}
+        pass
     
-    def analyze_job_growth(self, df: pd.DataFrame, 
-                          time_column: str = 'created_at',
-                          job_column: str = 'job_title_clean') -> Dict:
+    def extract_skills_from_text(self, text: str) -> List[str]:
         """
-        Analyze job growth trends over time.
+        Extract skills from job description text.
+        
+        Args:
+            text: Job description text
+            
+        Returns:
+            List[str]: List of extracted skills
+        """
+        if pd.isna(text) or text == '':
+            return []
+        
+        # Common technical skills
+        skills_keywords = [
+            'python', 'java', 'javascript', 'sql', 'r', 'scala', 'go', 'c++', 'c#',
+            'machine learning', 'data science', 'statistics', 'analytics',
+            'pandas', 'numpy', 'scikit-learn', 'tensorflow', 'pytorch',
+            'tableau', 'power bi', 'excel', 'spss', 'sas',
+            'aws', 'azure', 'gcp', 'docker', 'kubernetes',
+            'spark', 'hadoop', 'kafka', 'elasticsearch',
+            'mysql', 'postgresql', 'mongodb', 'redis',
+            'git', 'github', 'gitlab', 'jenkins',
+            'agile', 'scrum', 'jira', 'confluence'
+        ]
+        
+        text_lower = str(text).lower()
+        found_skills = []
+        
+        for skill in skills_keywords:
+            if skill in text_lower:
+                found_skills.append(skill)
+        
+        return found_skills
+    
+    def analyze_job_titles(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """
+        Analyze job title trends.
         
         Args:
             df: DataFrame with job data
-            time_column: Column containing time information
-            job_column: Column containing job titles
             
         Returns:
-            Dict: Job growth analysis results
+            Dict[str, Any]: Job title analysis results
         """
-        logger.info("Analyzing job growth trends...")
+        if df.empty or 'job_title_clean' not in df.columns:
+            return {}
         
-        # Convert time column to datetime
-        if time_column in df.columns:
-            df[time_column] = pd.to_datetime(df[time_column], errors='coerce')
+        # Get job title counts
+        title_counts = df['job_title_clean'].value_counts()
         
-        # Group by time period and count jobs
-        if time_column in df.columns:
-            df['month'] = df[time_column].dt.to_period('M')
-            monthly_counts = df.groupby('month').size()
-            
-            # Calculate growth rate
-            growth_rate = monthly_counts.pct_change().mean()
-            
-            # Identify peak months
-            peak_month = monthly_counts.idxmax()
-            peak_count = monthly_counts.max()
-            
-            # Trend direction
-            if len(monthly_counts) >= 2:
-                recent_trend = "increasing" if monthly_counts.iloc[-1] > monthly_counts.iloc[-2] else "decreasing"
-            else:
-                recent_trend = "stable"
-            
-            return {
-                'monthly_counts': monthly_counts.to_dict(),
-                'growth_rate': growth_rate,
-                'peak_month': str(peak_month),
-                'peak_count': peak_count,
-                'recent_trend': recent_trend,
-                'total_jobs': len(df)
-            }
-        else:
-            logger.warning(f"Time column '{time_column}' not found in data")
-            return {'error': f"Time column '{time_column}' not found"}
-    
-    def analyze_industry_trends(self, df: pd.DataFrame, 
-                               industry_column: str = 'industry') -> Dict:
-        """
-        Analyze trends by industry.
+        # Top job titles
+        top_titles = title_counts.head(20).to_dict()
         
-        Args:
-            df: DataFrame with job data
-            industry_column: Column containing industry information
-            
-        Returns:
-            Dict: Industry trend analysis results
-        """
-        logger.info("Analyzing industry trends...")
-        
-        if industry_column not in df.columns:
-            logger.warning(f"Industry column '{industry_column}' not found")
-            return {'error': f"Industry column '{industry_column}' not found"}
-        
-        # Count jobs by industry
-        industry_counts = df[industry_column].value_counts()
-        
-        # Calculate percentages
-        industry_percentages = (industry_counts / len(df) * 100).round(2)
-        
-        # Top growing industries (if we have time data)
-        if 'created_at' in df.columns:
-            df['created_at'] = pd.to_datetime(df['created_at'], errors='coerce')
-            df['month'] = df['created_at'].dt.to_period('M')
-            
-            # Compare first half vs second half
-            mid_point = len(df['month'].unique()) // 2
-            first_half = df[df['month'] <= df['month'].unique()[mid_point]]
-            second_half = df[df['month'] > df['month'].unique()[mid_point]]
-            
-            first_half_counts = first_half[industry_column].value_counts()
-            second_half_counts = second_half[industry_column].value_counts()
-            
-            # Calculate growth
-            growth_data = {}
-            for industry in industry_counts.index:
-                first_count = first_half_counts.get(industry, 0)
-                second_count = second_half_counts.get(industry, 0)
-                if first_count > 0:
-                    growth = ((second_count - first_count) / first_count) * 100
-                    growth_data[industry] = growth
-                else:
-                    growth_data[industry] = 0
-        else:
-            growth_data = {}
+        # Job title categories
+        title_categories = self._categorize_job_titles(df['job_title_clean'].tolist())
         
         return {
-            'industry_counts': industry_counts.to_dict(),
-            'industry_percentages': industry_percentages.to_dict(),
-            'growth_by_industry': growth_data,
-            'top_industries': industry_counts.head(10).to_dict()
+            'total_unique_titles': len(title_counts),
+            'top_titles': top_titles,
+            'categories': title_categories
         }
     
-    def analyze_geographic_trends(self, df: pd.DataFrame,
-                                 city_column: str = 'city',
-                                 country_column: str = 'country') -> Dict:
+    def analyze_salary_trends(self, df: pd.DataFrame) -> Dict[str, Any]:
         """
-        Analyze geographic distribution of jobs.
+        Analyze salary trends.
         
         Args:
             df: DataFrame with job data
-            city_column: Column containing city information
-            country_column: Column containing country information
             
         Returns:
-            Dict: Geographic trend analysis results
+            Dict[str, Any]: Salary analysis results
         """
-        logger.info("Analyzing geographic trends...")
+        if df.empty:
+            return {}
         
-        results = {}
+        salary_analysis = {}
+        
+        # Basic salary statistics
+        if 'salary_min' in df.columns and 'salary_max' in df.columns:
+            # Calculate average salary
+            df['avg_salary'] = (df['salary_min'] + df['salary_max']) / 2
+            
+            salary_analysis = {
+                'mean_salary': df['avg_salary'].mean(),
+                'median_salary': df['avg_salary'].median(),
+                'min_salary': df['avg_salary'].min(),
+                'max_salary': df['avg_salary'].max(),
+                'std_salary': df['avg_salary'].std(),
+                'salary_range_25th': df['avg_salary'].quantile(0.25),
+                'salary_range_75th': df['avg_salary'].quantile(0.75)
+            }
+        
+        # Salary by job title
+        if 'job_title_clean' in df.columns and 'avg_salary' in df.columns:
+            salary_by_title = df.groupby('job_title_clean')['avg_salary'].agg(['mean', 'count']).reset_index()
+            salary_by_title = salary_by_title[salary_by_title['count'] >= 5]  # At least 5 samples
+            salary_by_title = salary_by_title.sort_values('mean', ascending=False)
+            salary_analysis['top_paying_titles'] = salary_by_title.head(10).to_dict('records')
+        
+        # Salary by location
+        if 'city' in df.columns and 'avg_salary' in df.columns:
+            salary_by_city = df.groupby('city')['avg_salary'].agg(['mean', 'count']).reset_index()
+            salary_by_city = salary_by_city[salary_by_city['count'] >= 5]  # At least 5 samples
+            salary_by_city = salary_by_city.sort_values('mean', ascending=False)
+            salary_analysis['top_paying_cities'] = salary_by_city.head(10).to_dict('records')
+        
+        return salary_analysis
+    
+    def analyze_geographic_trends(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """
+        Analyze geographic distribution trends.
+        
+        Args:
+            df: DataFrame with job data
+            
+        Returns:
+            Dict[str, Any]: Geographic analysis results
+        """
+        if df.empty:
+            return {}
+        
+        geo_analysis = {}
         
         # Country analysis
-        if country_column in df.columns:
-            country_counts = df[country_column].value_counts()
-            country_percentages = (country_counts / len(df) * 100).round(2)
-            
-            results['country_counts'] = country_counts.to_dict()
-            results['country_percentages'] = country_percentages.to_dict()
-            results['top_countries'] = country_counts.head(10).to_dict()
+        if 'country' in df.columns:
+            country_counts = df['country'].value_counts()
+            geo_analysis['countries'] = {
+                'distribution': country_counts.to_dict(),
+                'top_countries': country_counts.head(10).to_dict()
+            }
         
         # City analysis
-        if city_column in df.columns:
-            city_counts = df[city_column].value_counts()
-            city_percentages = (city_counts / len(df) * 100).round(2)
-            
-            results['city_counts'] = city_counts.to_dict()
-            results['city_percentages'] = city_percentages.to_dict()
-            results['top_cities'] = city_counts.head(20).to_dict()
+        if 'city' in df.columns:
+            city_counts = df['city'].value_counts()
+            geo_analysis['cities'] = {
+                'distribution': city_counts.to_dict(),
+                'top_cities': city_counts.head(20).to_dict()
+            }
         
-        # Geographic distribution by source
-        if 'source' in df.columns:
-            geo_by_source = df.groupby(['source', country_column]).size().unstack(fill_value=0)
-            results['geo_by_source'] = geo_by_source.to_dict()
+        # State analysis (if available)
+        if 'state' in df.columns:
+            state_counts = df['state'].value_counts()
+            geo_analysis['states'] = {
+                'distribution': state_counts.to_dict(),
+                'top_states': state_counts.head(15).to_dict()
+            }
         
-        return results
+        return geo_analysis
     
-    def analyze_skills_trends(self, df: pd.DataFrame,
-                              skills_column: str = 'skills') -> Dict:
+    def analyze_skills_trends(self, df: pd.DataFrame) -> Dict[str, Any]:
         """
-        Analyze trending skills in job market.
+        Analyze skills trends.
         
         Args:
             df: DataFrame with job data
-            skills_column: Column containing skills information
             
         Returns:
-            Dict: Skills trend analysis results
+            Dict[str, Any]: Skills analysis results
         """
-        logger.info("Analyzing skills trends...")
+        if df.empty:
+            return {}
         
-        if skills_column not in df.columns:
-            logger.warning(f"Skills column '{skills_column}' not found")
-            return {'error': f"Skills column '{skills_column}' not found"}
+        skills_analysis = {}
         
-        # Extract all skills
+        # Extract skills from job descriptions
         all_skills = []
-        for skills_str in df[skills_column].dropna():
-            if isinstance(skills_str, str):
-                # Split by common delimiters
-                skills = [skill.strip() for skill in skills_str.split(',')]
+        if 'job_description' in df.columns:
+            for desc in df['job_description'].dropna():
+                skills = self.extract_skills_from_text(desc)
                 all_skills.extend(skills)
+        
+        # Also use existing skills column if available
+        if 'skills' in df.columns:
+            for skills_str in df['skills'].dropna():
+                if isinstance(skills_str, str):
+                    skills = [skill.strip().lower() for skill in skills_str.split(',')]
+                    all_skills.extend(skills)
         
         # Count skills
         skills_counter = Counter(all_skills)
-        skills_counts = pd.Series(dict(skills_counter))
         
-        # Calculate percentages
-        skills_percentages = (skills_counts / len(df) * 100).round(2)
-        
-        # Top skills
-        top_skills = skills_counts.head(20)
-        
-        return {
-            'skills_counts': skills_counts.to_dict(),
-            'skills_percentages': skills_percentages.to_dict(),
-            'top_skills': top_skills.to_dict(),
-            'total_unique_skills': len(skills_counts)
+        skills_analysis = {
+            'total_unique_skills': len(skills_counter),
+            'top_skills': dict(skills_counter.most_common(20)),
+            'skills_frequency': dict(skills_counter)
         }
+        
+        return skills_analysis
     
-    def analyze_salary_trends(self, df: pd.DataFrame,
-                              salary_min_col: str = 'salary_min',
-                              salary_max_col: str = 'salary_max') -> Dict:
+    def analyze_industry_trends(self, df: pd.DataFrame) -> Dict[str, Any]:
         """
-        Analyze salary trends over time and by location.
-        
-        Args:
-            df: DataFrame with job data
-            salary_min_col: Column containing minimum salary
-            salary_max_col: Column containing maximum salary
-            
-        Returns:
-            Dict: Salary trend analysis results
-        """
-        logger.info("Analyzing salary trends...")
-        
-        results = {}
-        
-        # Calculate average salary
-        if salary_min_col in df.columns and salary_max_col in df.columns:
-            df['avg_salary'] = (df[salary_min_col] + df[salary_max_col]) / 2
-            
-            # Overall salary statistics
-            results['overall_stats'] = {
-                'mean_salary': df['avg_salary'].mean(),
-                'median_salary': df['avg_salary'].median(),
-                'std_salary': df['avg_salary'].std(),
-                'min_salary': df['avg_salary'].min(),
-                'max_salary': df['avg_salary'].max()
-            }
-            
-            # Salary by location
-            if 'city' in df.columns:
-                salary_by_city = df.groupby('city')['avg_salary'].agg(['mean', 'count']).sort_values('mean', ascending=False)
-                results['salary_by_city'] = salary_by_city.head(20).to_dict()
-            
-            # Salary by industry
-            if 'industry' in df.columns:
-                salary_by_industry = df.groupby('industry')['avg_salary'].agg(['mean', 'count']).sort_values('mean', ascending=False)
-                results['salary_by_industry'] = salary_by_industry.head(20).to_dict()
-            
-            # Salary trends over time
-            if 'created_at' in df.columns:
-                df['created_at'] = pd.to_datetime(df['created_at'], errors='coerce')
-                df['month'] = df['created_at'].dt.to_period('M')
-                monthly_salary = df.groupby('month')['avg_salary'].mean()
-                results['monthly_salary_trend'] = monthly_salary.to_dict()
-        
-        return results
-    
-    def generate_trend_report(self, df: pd.DataFrame) -> Dict:
-        """
-        Generate comprehensive trend analysis report.
+        Analyze industry trends.
         
         Args:
             df: DataFrame with job data
             
         Returns:
-            Dict: Complete trend analysis report
+            Dict[str, Any]: Industry analysis results
         """
+        if df.empty or 'industry' not in df.columns:
+            return {}
+        
+        industry_analysis = {}
+        
+        # Industry distribution
+        industry_counts = df['industry'].value_counts()
+        industry_analysis = {
+            'total_industries': len(industry_counts),
+            'industry_distribution': industry_counts.to_dict(),
+            'top_industries': industry_counts.head(15).to_dict()
+        }
+        
+        # Industry vs salary analysis
+        if 'avg_salary' in df.columns:
+            industry_salary = df.groupby('industry')['avg_salary'].agg(['mean', 'count']).reset_index()
+            industry_salary = industry_salary[industry_salary['count'] >= 5]  # At least 5 samples
+            industry_salary = industry_salary.sort_values('mean', ascending=False)
+            industry_analysis['top_paying_industries'] = industry_salary.head(10).to_dict('records')
+        
+        return industry_analysis
+    
+    def _categorize_job_titles(self, job_titles: List[str]) -> Dict[str, List[str]]:
+        """
+        Categorize job titles into groups.
+        
+        Args:
+            job_titles: List of job titles
+            
+        Returns:
+            Dict[str, List[str]]: Categorized job titles
+        """
+        categories = {
+            'Data Science': [],
+            'Data Analysis': [],
+            'Software Engineering': [],
+            'Management': [],
+            'Other': []
+        }
+        
+        for title in job_titles:
+            title_lower = str(title).lower()
+            
+            if any(keyword in title_lower for keyword in ['data scientist', 'ml engineer', 'ai engineer']):
+                categories['Data Science'].append(title)
+            elif any(keyword in title_lower for keyword in ['data analyst', 'business analyst', 'research analyst']):
+                categories['Data Analysis'].append(title)
+            elif any(keyword in title_lower for keyword in ['software', 'developer', 'engineer', 'programmer']):
+                categories['Software Engineering'].append(title)
+            elif any(keyword in title_lower for keyword in ['manager', 'director', 'lead', 'head']):
+                categories['Management'].append(title)
+            else:
+                categories['Other'].append(title)
+        
+        return categories
+    
+    def generate_trend_report(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """
+        Generate comprehensive trend report.
+        
+        Args:
+            df: Combined DataFrame with all job data
+            
+        Returns:
+            Dict[str, Any]: Comprehensive trend report
+        """
+        if df.empty:
+            return {'error': 'No data available for analysis'}
+        
         logger.info("Generating comprehensive trend report...")
         
         report = {
-            'timestamp': datetime.now().isoformat(),
-            'total_records': len(df),
-            'job_growth': self.analyze_job_growth(df),
-            'industry_trends': self.analyze_industry_trends(df),
+            'summary': {
+                'total_jobs': len(df),
+                'unique_companies': df['company_name'].nunique() if 'company_name' in df.columns else 0,
+                'unique_locations': df['city'].nunique() if 'city' in df.columns else 0,
+                'data_sources': df['source'].value_counts().to_dict() if 'source' in df.columns else {}
+            },
+            'job_titles': self.analyze_job_titles(df),
+            'salary_trends': self.analyze_salary_trends(df),
             'geographic_trends': self.analyze_geographic_trends(df),
             'skills_trends': self.analyze_skills_trends(df),
-            'salary_trends': self.analyze_salary_trends(df)
+            'industry_trends': self.analyze_industry_trends(df)
         }
         
+        logger.info("Trend report generated successfully")
         return report
     
-    def plot_trends(self, df: pd.DataFrame, save_path: Optional[str] = None):
+    def get_market_insights(self, df: pd.DataFrame) -> List[str]:
         """
-        Create visualization plots for trends.
+        Generate market insights from the data.
         
         Args:
-            df: DataFrame with job data
-            save_path: Path to save plots
+            df: Combined DataFrame with all job data
+            
+        Returns:
+            List[str]: List of market insights
         """
-        logger.info("Creating trend visualizations...")
+        insights = []
         
-        # Set up the plotting style
-        plt.style.use('seaborn-v0_8')
-        fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-        fig.suptitle('Job Market Trends Analysis', fontsize=16, fontweight='bold')
+        if df.empty:
+            return ["No data available for insights generation"]
         
-        # 1. Industry distribution
-        if 'industry' in df.columns:
-            industry_counts = df['industry'].value_counts().head(10)
-            axes[0, 0].pie(industry_counts.values, labels=industry_counts.index, autopct='%1.1f%%')
-            axes[0, 0].set_title('Top 10 Industries')
+        # Total jobs insight
+        total_jobs = len(df)
+        insights.append(f"Total job postings analyzed: {total_jobs:,}")
         
-        # 2. Geographic distribution
-        if 'country' in df.columns:
-            country_counts = df['country'].value_counts().head(10)
-            axes[0, 1].bar(range(len(country_counts)), country_counts.values)
-            axes[0, 1].set_xticks(range(len(country_counts)))
-            axes[0, 1].set_xticklabels(country_counts.index, rotation=45)
-            axes[0, 1].set_title('Jobs by Country')
+        # Source distribution insight
+        if 'source' in df.columns:
+            source_counts = df['source'].value_counts()
+            top_source = source_counts.index[0]
+            insights.append(f"Primary data source: {top_source} ({source_counts[top_source]:,} jobs)")
         
-        # 3. Salary distribution
-        if 'salary_min' in df.columns and 'salary_max' in df.columns:
-            df['avg_salary'] = (df['salary_min'] + df['salary_max']) / 2
-            axes[1, 0].hist(df['avg_salary'].dropna(), bins=30, alpha=0.7)
-            axes[1, 0].set_title('Salary Distribution')
-            axes[1, 0].set_xlabel('Average Salary')
-            axes[1, 0].set_ylabel('Frequency')
-        
-        # 4. Job titles distribution
+        # Top job title insight
         if 'job_title_clean' in df.columns:
-            job_counts = df['job_title_clean'].value_counts().head(10)
-            axes[1, 1].barh(range(len(job_counts)), job_counts.values)
-            axes[1, 1].set_yticks(range(len(job_counts)))
-            axes[1, 1].set_yticklabels(job_counts.index)
-            axes[1, 1].set_title('Top 10 Job Titles')
+            top_title = df['job_title_clean'].value_counts().index[0]
+            title_count = df['job_title_clean'].value_counts().iloc[0]
+            insights.append(f"Most common job title: {top_title} ({title_count:,} postings)")
         
-        plt.tight_layout()
+        # Salary insight
+        if 'avg_salary' in df.columns:
+            avg_salary = df['avg_salary'].mean()
+            insights.append(f"Average salary across all positions: ${avg_salary:,.0f}")
         
-        if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Trend plots saved to {save_path}")
+        # Geographic insight
+        if 'country' in df.columns:
+            top_country = df['country'].value_counts().index[0]
+            country_count = df['country'].value_counts().iloc[0]
+            insights.append(f"Most job postings from: {top_country} ({country_count:,} jobs)")
         
-        plt.show()
+        # Skills insight
+        if 'skills' in df.columns:
+            all_skills = []
+            for skills_str in df['skills'].dropna():
+                if isinstance(skills_str, str):
+                    skills = [skill.strip().lower() for skill in skills_str.split(',')]
+                    all_skills.extend(skills)
+            
+            if all_skills:
+                skills_counter = Counter(all_skills)
+                top_skill = skills_counter.most_common(1)[0]
+                insights.append(f"Most in-demand skill: {top_skill[0]} (mentioned {top_skill[1]} times)")
+        
+        return insights
 
 
 if __name__ == "__main__":
     # Example usage
-    from ..etl.data_loader import DataLoader
-    from ..etl.data_cleaner import DataCleaner
+    from data_loader import DataLoader
+    from data_cleaner import DataCleaner
     
     # Load and clean data
     loader = DataLoader()
@@ -359,15 +381,16 @@ if __name__ == "__main__":
     
     cleaner = DataCleaner()
     cleaned_data = cleaner.clean_all_data(raw_data)
+    standardized_data = cleaner.standardize_columns(cleaned_data)
     
     # Combine all data
-    all_data = pd.concat(cleaned_data.values(), ignore_index=True)
+    all_data = pd.concat(standardized_data.values(), ignore_index=True)
     
     # Analyze trends
     analyzer = TrendAnalyzer()
     report = analyzer.generate_trend_report(all_data)
     
-    print("Trend Analysis Report:")
-    print(f"Total records: {report['total_records']}")
-    print(f"Job growth rate: {report['job_growth'].get('growth_rate', 'N/A')}")
-    print(f"Top industries: {list(report['industry_trends'].get('top_industries', {}).keys())[:5]}")
+    # Print insights
+    insights = analyzer.get_market_insights(all_data)
+    for insight in insights:
+        print(f"• {insight}")

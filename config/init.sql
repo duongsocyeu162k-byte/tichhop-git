@@ -1,11 +1,8 @@
 -- Initialize Job Analytics Database
 -- This script creates the necessary tables for the job analytics project
 
--- Create database if not exists
-CREATE DATABASE IF NOT EXISTS job_analytics;
-
--- Use the database
-\c job_analytics;
+-- Note: Database is already created by docker-compose environment variables
+-- This script runs after database creation
 
 -- Create raw data tables
 CREATE TABLE IF NOT EXISTS raw_glassdoor (
