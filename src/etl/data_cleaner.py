@@ -307,12 +307,12 @@ class DataCleaner:
         final_score = max(0, completeness_score - error_penalty - warning_penalty)
         return round(final_score, 2)
     
-    def clean_glassdoor_data(self, df: pd.DataFrame) -> pd.DataFrame:
+    def clean_careerlink_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Clean Glassdoor data.
+        Clean CareerLink data.
         
         Args:
-            df: Raw Glassdoor DataFrame
+            df: Raw CareerLink DataFrame
             
         Returns:
             pd.DataFrame: Cleaned DataFrame
@@ -320,73 +320,163 @@ class DataCleaner:
         if df.empty:
             return df
         
-        logger.info("Cleaning Glassdoor data...")
+        logger.info("Cleaning CareerLink data...")
         cleaned_df = df.copy()
         
         # Add source identifier
-        cleaned_df['source'] = 'glassdoor'
+        cleaned_df['source'] = 'careerlink'
         
         # Clean job titles
-        if 'Job Title' in cleaned_df.columns:
-            cleaned_df['job_title_clean'] = cleaned_df['Job Title'].apply(self.clean_text)
+        if 'tên công việc' in cleaned_df.columns:
+            cleaned_df['job_title_clean'] = cleaned_df['tên công việc'].apply(self.clean_text)
         
         # Clean company names
-        if 'Company Name' in cleaned_df.columns:
-            cleaned_df['company_name'] = cleaned_df['Company Name'].apply(self.clean_text)
+        if 'tên công ty' in cleaned_df.columns:
+            cleaned_df['company_name'] = cleaned_df['tên công ty'].apply(self.clean_text)
         
         # Clean locations
-        if 'Location' in cleaned_df.columns:
-            cleaned_df['location_clean'] = cleaned_df['Location'].apply(self.clean_text)
-            # Extract city and state
-            cleaned_df['city'] = cleaned_df['Location'].apply(self._extract_city)
-            cleaned_df['state'] = cleaned_df['Location'].apply(self._extract_state)
-            cleaned_df['country'] = 'United States'  # Glassdoor is US-focused
+        if 'Địa điểm công việc' in cleaned_df.columns:
+            cleaned_df['location_clean'] = cleaned_df['Địa điểm công việc'].apply(self.clean_text)
+            # Extract city and state for Vietnamese locations
+            cleaned_df['city'] = cleaned_df['Địa điểm công việc'].apply(self._extract_vietnamese_city)
+            cleaned_df['state'] = cleaned_df['Địa điểm công việc'].apply(self._extract_vietnamese_province)
+            cleaned_df['country'] = 'Vietnam'
         
-        # Clean salary estimates
-        if 'Salary Estimate' in cleaned_df.columns:
-            salary_data = cleaned_df['Salary Estimate'].apply(self.extract_salary_range)
+        # Clean salary
+        if 'Mức lương' in cleaned_df.columns:
+            salary_data = cleaned_df['Mức lương'].apply(self.extract_vietnamese_salary_range)
             cleaned_df['salary_min'] = [x[0] for x in salary_data]
             cleaned_df['salary_max'] = [x[1] for x in salary_data]
         
         # Clean industry
-        if 'Industry' in cleaned_df.columns:
-            cleaned_df['industry'] = cleaned_df['Industry'].apply(self.clean_text)
+        if 'ngành nghề' in cleaned_df.columns:
+            cleaned_df['industry'] = cleaned_df['ngành nghề'].apply(self.clean_text)
         
         # Clean job descriptions
-        if 'Job Description' in cleaned_df.columns:
-            cleaned_df['job_description'] = cleaned_df['Job Description'].apply(self.clean_text)
+        if 'mô tả công việc' in cleaned_df.columns:
+            cleaned_df['job_description'] = cleaned_df['mô tả công việc'].apply(self.clean_text)
         
-        # Clean ratings
-        if 'Rating' in cleaned_df.columns:
-            cleaned_df['rating'] = pd.to_numeric(cleaned_df['Rating'], errors='coerce')
+        # Clean skills
+        if 'kĩ năng yêu cầu' in cleaned_df.columns:
+            cleaned_df['skills'] = cleaned_df['kĩ năng yêu cầu'].apply(self.clean_text)
+        else:
+            cleaned_df['skills'] = ''
+        
+        # Clean experience
+        if 'Kinh nghiệm' in cleaned_df.columns:
+            cleaned_df['experience'] = cleaned_df['Kinh nghiệm'].apply(self.extract_vietnamese_experience)
+        else:
+            cleaned_df['experience'] = None
+        
+        # Clean job type
+        if 'loại công việc' in cleaned_df.columns:
+            cleaned_df['job_type'] = cleaned_df['loại công việc'].apply(self.clean_text)
+        
+        # Clean job level
+        if 'cấp bậc' in cleaned_df.columns:
+            cleaned_df['job_level'] = cleaned_df['cấp bậc'].apply(self.clean_text)
+        
+        # Clean education
+        if 'học vấn' in cleaned_df.columns:
+            cleaned_df['education'] = cleaned_df['học vấn'].apply(self.clean_text)
+        
+        # Add missing columns
+        cleaned_df['rating'] = None
+        cleaned_df['company_size'] = None
+        cleaned_df['benefits'] = ''
+        
+        logger.info(f"Cleaned CareerLink data: {len(cleaned_df)} rows")
+        return cleaned_df
+    
+    def clean_joboko_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Clean Joboko data.
+        
+        Args:
+            df: Raw Joboko DataFrame
+            
+        Returns:
+            pd.DataFrame: Cleaned DataFrame
+        """
+        if df.empty:
+            return df
+        
+        logger.info("Cleaning Joboko data...")
+        cleaned_df = df.copy()
+        
+        # Add source identifier
+        cleaned_df['source'] = 'joboko'
+        
+        # Clean job titles
+        if 'tên công việc' in cleaned_df.columns:
+            cleaned_df['job_title_clean'] = cleaned_df['tên công việc'].apply(self.clean_text)
+        
+        # Clean company names
+        if 'tên công ty' in cleaned_df.columns:
+            cleaned_df['company_name'] = cleaned_df['tên công ty'].apply(self.clean_text)
+        
+        # Clean locations
+        if 'địa điểm' in cleaned_df.columns:
+            cleaned_df['location_clean'] = cleaned_df['địa điểm'].apply(self.clean_text)
+            cleaned_df['city'] = cleaned_df['địa điểm'].apply(self._extract_vietnamese_city)
+            cleaned_df['state'] = cleaned_df['địa điểm'].apply(self._extract_vietnamese_province)
+            cleaned_df['country'] = 'Vietnam'
+        
+        # Clean salary
+        if 'mức lương' in cleaned_df.columns:
+            salary_data = cleaned_df['mức lương'].apply(self.extract_vietnamese_salary_range)
+            cleaned_df['salary_min'] = [x[0] for x in salary_data]
+            cleaned_df['salary_max'] = [x[1] for x in salary_data]
+        else:
+            cleaned_df['salary_min'] = None
+            cleaned_df['salary_max'] = None
+        
+        # Clean industry
+        if 'ngành nghề' in cleaned_df.columns:
+            cleaned_df['industry'] = cleaned_df['ngành nghề'].apply(self.clean_text)
+        
+        # Clean job descriptions
+        if 'mô tả công việc' in cleaned_df.columns:
+            cleaned_df['job_description'] = cleaned_df['mô tả công việc'].apply(self.clean_text)
+        
+        # Clean skills
+        if 'kĩ năng yêu cầu' in cleaned_df.columns:
+            cleaned_df['skills'] = cleaned_df['kĩ năng yêu cầu'].apply(self.clean_text)
+        else:
+            cleaned_df['skills'] = ''
+        
+        # Clean experience
+        if 'kinh nghiệm' in cleaned_df.columns:
+            cleaned_df['experience'] = cleaned_df['kinh nghiệm'].apply(self.extract_vietnamese_experience)
+        else:
+            cleaned_df['experience'] = None
+        
+        # Clean job type
+        if 'loại công việc' in cleaned_df.columns:
+            cleaned_df['job_type'] = cleaned_df['loại công việc'].apply(self.clean_text)
+        
+        # Clean job level
+        if 'cấp bậc' in cleaned_df.columns:
+            cleaned_df['job_level'] = cleaned_df['cấp bậc'].apply(self.clean_text)
         
         # Clean company size
-        if 'Size' in cleaned_df.columns:
-            cleaned_df['company_size'] = cleaned_df['Size'].apply(self.clean_text)
+        if 'quy mô công ty' in cleaned_df.columns:
+            cleaned_df['company_size'] = cleaned_df['quy mô công ty'].apply(self.clean_text)
         
-        # Extract skills from job description
-        if 'Job Description' in cleaned_df.columns:
-            cleaned_df['skills'] = cleaned_df['Job Description'].apply(
-                lambda x: ','.join(self.extract_skills(x)) if pd.notna(x) else ''
-            )
-        else:
-            cleaned_df['skills'] = ''
+        # Add missing columns
+        cleaned_df['rating'] = None
+        cleaned_df['education'] = None
+        cleaned_df['benefits'] = ''
         
-        # Extract experience from job description
-        if 'Job Description' in cleaned_df.columns:
-            cleaned_df['experience'] = cleaned_df['Job Description'].apply(self.extract_experience)
-        else:
-            cleaned_df['experience'] = None
-        
-        logger.info(f"Cleaned Glassdoor data: {len(cleaned_df)} rows")
+        logger.info(f"Cleaned Joboko data: {len(cleaned_df)} rows")
         return cleaned_df
     
-    def clean_monster_data(self, df: pd.DataFrame) -> pd.DataFrame:
+    def clean_topcv_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Clean Monster.com data.
+        Clean TopCV data.
         
         Args:
-            df: Raw Monster DataFrame
+            df: Raw TopCV DataFrame
             
         Returns:
             pd.DataFrame: Cleaned DataFrame
@@ -394,159 +484,73 @@ class DataCleaner:
         if df.empty:
             return df
         
-        logger.info("Cleaning Monster data...")
+        logger.info("Cleaning TopCV data...")
         cleaned_df = df.copy()
         
         # Add source identifier
-        cleaned_df['source'] = 'monster'
+        cleaned_df['source'] = 'topcv'
         
         # Clean job titles
-        if 'job_title' in cleaned_df.columns:
-            cleaned_df['job_title_clean'] = cleaned_df['job_title'].apply(self.clean_text)
+        if 'tên công việc' in cleaned_df.columns:
+            cleaned_df['job_title_clean'] = cleaned_df['tên công việc'].apply(self.clean_text)
         
         # Clean company names
-        if 'organization' in cleaned_df.columns:
-            cleaned_df['company_name'] = cleaned_df['organization'].apply(self.clean_text)
+        if 'tên công ty' in cleaned_df.columns:
+            cleaned_df['company_name'] = cleaned_df['tên công ty'].apply(self.clean_text)
         
         # Clean locations
-        if 'location' in cleaned_df.columns:
-            cleaned_df['location_clean'] = cleaned_df['location'].apply(self.clean_text)
-            cleaned_df['city'] = cleaned_df['location'].apply(self._extract_city)
-            cleaned_df['state'] = cleaned_df['location'].apply(self._extract_state)
-            cleaned_df['country'] = cleaned_df['country'].fillna('Unknown')
+        if 'địa điểm' in cleaned_df.columns:
+            cleaned_df['location_clean'] = cleaned_df['địa điểm'].apply(self.clean_text)
+            cleaned_df['city'] = cleaned_df['địa điểm'].apply(self._extract_vietnamese_city)
+            cleaned_df['state'] = cleaned_df['địa điểm'].apply(self._extract_vietnamese_province)
+            cleaned_df['country'] = 'Vietnam'
         
         # Clean salary
-        if 'salary' in cleaned_df.columns:
-            salary_data = cleaned_df['salary'].apply(self.extract_salary_range)
+        if 'mức lương' in cleaned_df.columns:
+            salary_data = cleaned_df['mức lương'].apply(self.extract_vietnamese_salary_range)
             cleaned_df['salary_min'] = [x[0] for x in salary_data]
             cleaned_df['salary_max'] = [x[1] for x in salary_data]
         else:
             cleaned_df['salary_min'] = None
             cleaned_df['salary_max'] = None
         
-        # Clean industry/sector
-        if 'sector' in cleaned_df.columns:
-            cleaned_df['industry'] = cleaned_df['sector'].apply(self.clean_text)
-        
         # Clean job descriptions
-        if 'job_description' in cleaned_df.columns:
-            cleaned_df['job_description'] = cleaned_df['job_description'].apply(self.clean_text)
+        if 'mô tả công việc' in cleaned_df.columns:
+            cleaned_df['job_description'] = cleaned_df['mô tả công việc'].apply(self.clean_text)
         
-        # Add missing columns
-        cleaned_df['rating'] = None
-        cleaned_df['company_size'] = None
-        
-        # Extract skills from job description
-        if 'job_description' in cleaned_df.columns:
-            cleaned_df['skills'] = cleaned_df['job_description'].apply(
-                lambda x: ','.join(self.extract_skills(x)) if pd.notna(x) else ''
-            )
+        # Clean skills
+        if 'kĩ năng yêu cầu' in cleaned_df.columns:
+            cleaned_df['skills'] = cleaned_df['kĩ năng yêu cầu'].apply(self.clean_text)
         else:
             cleaned_df['skills'] = ''
         
-        # Extract experience from job description
-        if 'job_description' in cleaned_df.columns:
-            cleaned_df['experience'] = cleaned_df['job_description'].apply(self.extract_experience)
+        # Clean experience
+        if 'kinh nghiệm' in cleaned_df.columns:
+            cleaned_df['experience'] = cleaned_df['kinh nghiệm'].apply(self.extract_vietnamese_experience)
         else:
             cleaned_df['experience'] = None
         
-        logger.info(f"Cleaned Monster data: {len(cleaned_df)} rows")
-        return cleaned_df
-    
-    def clean_naukri_data(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Clean Naukri.com data.
-        
-        Args:
-            df: Raw Naukri DataFrame
-            
-        Returns:
-            pd.DataFrame: Cleaned DataFrame
-        """
-        if df.empty:
-            return df
-        
-        logger.info("Cleaning Naukri data...")
-        cleaned_df = df.copy()
-        
-        # Add source identifier
-        cleaned_df['source'] = 'naukri'
-        
-        # Clean job titles
-        if 'jobtitle' in cleaned_df.columns:
-            cleaned_df['job_title_clean'] = cleaned_df['jobtitle'].apply(self.clean_text)
-        
-        # Clean company names
-        if 'company' in cleaned_df.columns:
-            cleaned_df['company_name'] = cleaned_df['company'].apply(self.clean_text)
-        
-        # Clean locations
-        if 'joblocation_address' in cleaned_df.columns:
-            cleaned_df['location_clean'] = cleaned_df['joblocation_address'].apply(self.clean_text)
-            cleaned_df['city'] = cleaned_df['joblocation_address'].apply(self._extract_city)
-            cleaned_df['state'] = cleaned_df['joblocation_address'].apply(self._extract_state)
-            cleaned_df['country'] = 'India'  # Naukri is India-focused
-        
-        # Clean salary
-        if 'payrate' in cleaned_df.columns:
-            salary_data = cleaned_df['payrate'].apply(self.extract_salary_range)
-            cleaned_df['salary_min'] = [x[0] for x in salary_data]
-            cleaned_df['salary_max'] = [x[1] for x in salary_data]
+        # Clean benefits
+        if 'quyền lợi' in cleaned_df.columns:
+            cleaned_df['benefits'] = cleaned_df['quyền lợi'].apply(self.clean_text)
         else:
-            cleaned_df['salary_min'] = None
-            cleaned_df['salary_max'] = None
+            cleaned_df['benefits'] = ''
         
-        # Clean industry
-        if 'industry' in cleaned_df.columns:
-            cleaned_df['industry'] = cleaned_df['industry'].apply(self.clean_text)
-        
-        # Clean job descriptions
-        if 'jobdescription' in cleaned_df.columns:
-            cleaned_df['job_description'] = cleaned_df['jobdescription'].apply(self.clean_text)
-        
-        # Clean and extract skills
-        if 'skills' in cleaned_df.columns:
-            # First clean existing skills
-            cleaned_df['skills'] = cleaned_df['skills'].apply(self.clean_text)
-            # Then extract additional skills from job description
-            if 'jobdescription' in cleaned_df.columns:
-                additional_skills = cleaned_df['jobdescription'].apply(
-                    lambda x: ','.join(self.extract_skills(x)) if pd.notna(x) else ''
-                )
-                # Combine existing and extracted skills
-                cleaned_df['skills'] = cleaned_df['skills'] + ',' + additional_skills
-                cleaned_df['skills'] = cleaned_df['skills'].apply(
-                    lambda x: ','.join(list(set([s.strip() for s in x.split(',') if s.strip()])))
-                )
+        # Clean work time
+        if 'thời gian làm việc' in cleaned_df.columns:
+            cleaned_df['work_time'] = cleaned_df['thời gian làm việc'].apply(self.clean_text)
         else:
-            # Extract skills from job description only
-            if 'jobdescription' in cleaned_df.columns:
-                cleaned_df['skills'] = cleaned_df['jobdescription'].apply(
-                    lambda x: ','.join(self.extract_skills(x)) if pd.notna(x) else ''
-                )
-            else:
-                cleaned_df['skills'] = ''
-        
-        # Clean and extract experience
-        if 'experience' in cleaned_df.columns:
-            # First try to extract from existing experience field
-            cleaned_df['experience'] = cleaned_df['experience'].apply(self.extract_experience)
-            # Then try to extract from job description if not found
-            if 'jobdescription' in cleaned_df.columns:
-                job_exp = cleaned_df['jobdescription'].apply(self.extract_experience)
-                cleaned_df['experience'] = cleaned_df['experience'].fillna(job_exp)
-        else:
-            # Extract experience from job description only
-            if 'jobdescription' in cleaned_df.columns:
-                cleaned_df['experience'] = cleaned_df['jobdescription'].apply(self.extract_experience)
-            else:
-                cleaned_df['experience'] = None
+            cleaned_df['work_time'] = None
         
         # Add missing columns
         cleaned_df['rating'] = None
         cleaned_df['company_size'] = None
+        cleaned_df['industry'] = None
+        cleaned_df['job_type'] = None
+        cleaned_df['job_level'] = None
+        cleaned_df['education'] = None
         
-        logger.info(f"Cleaned Naukri data: {len(cleaned_df)} rows")
+        logger.info(f"Cleaned TopCV data: {len(cleaned_df)} rows")
         return cleaned_df
     
     def _extract_city(self, location: str) -> str:
@@ -573,6 +577,163 @@ class DataCleaner:
             return parts[1].strip()
         return ''
     
+    def _extract_vietnamese_city(self, location: str) -> str:
+        """Extract city from Vietnamese location string."""
+        if pd.isna(location):
+            return ''
+        
+        location = str(location).strip()
+        # Common Vietnamese city patterns
+        vietnamese_cities = [
+            'Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ',
+            'An Giang', 'Bà Rịa - Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu',
+            'Bắc Ninh', 'Bến Tre', 'Bình Định', 'Bình Dương', 'Bình Phước',
+            'Bình Thuận', 'Cà Mau', 'Cao Bằng', 'Đắk Lắk', 'Đắk Nông',
+            'Điện Biên', 'Đồng Nai', 'Đồng Tháp', 'Gia Lai', 'Hà Giang',
+            'Hà Nam', 'Hà Tĩnh', 'Hải Dương', 'Hậu Giang', 'Hòa Bình',
+            'Hưng Yên', 'Khánh Hòa', 'Kiên Giang', 'Kon Tum', 'Lai Châu',
+            'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Long An', 'Nam Định',
+            'Nghệ An', 'Ninh Bình', 'Ninh Thuận', 'Phú Thọ', 'Phú Yên',
+            'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị',
+            'Sóc Trăng', 'Sơn La', 'Tây Ninh', 'Thái Bình', 'Thái Nguyên',
+            'Thanh Hóa', 'Thừa Thiên Huế', 'Tiền Giang', 'Trà Vinh', 'Tuyên Quang',
+            'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'
+        ]
+        
+        # Check for exact city matches
+        for city in vietnamese_cities:
+            if city in location:
+                return city
+        
+        # If no exact match, split by comma and take first part
+        parts = location.split(',')
+        if parts:
+            return parts[0].strip()
+        return location
+    
+    def _extract_vietnamese_province(self, location: str) -> str:
+        """Extract province from Vietnamese location string."""
+        if pd.isna(location):
+            return ''
+        
+        location = str(location).strip()
+        # Split by comma and take last part (usually province)
+        parts = location.split(',')
+        if len(parts) > 1:
+            return parts[-1].strip()
+        return ''
+    
+    def extract_vietnamese_salary_range(self, salary_text: str) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Extract salary range from Vietnamese salary text.
+        
+        Args:
+            salary_text: Salary text (e.g., "8 - 15 triệu", "Thương lượng")
+            
+        Returns:
+            Tuple[Optional[float], Optional[float]]: (min_salary, max_salary) in VND
+        """
+        if pd.isna(salary_text) or salary_text == '':
+            return None, None
+        
+        salary_text = str(salary_text).strip()
+        
+        # Handle "Thương lượng" or "Thỏa thuận"
+        if any(term in salary_text.lower() for term in ['thương lượng', 'thỏa thuận', 'negotiable']):
+            return None, None
+        
+        # Handle "USD" currency
+        if 'usd' in salary_text.lower():
+            # Extract USD amounts
+            usd_pattern = r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*-\s*(\d+(?:,\d{3})*(?:\.\d{2})?)\s*usd'
+            usd_match = re.search(usd_pattern, salary_text.lower())
+            if usd_match:
+                min_usd = float(usd_match.group(1).replace(',', ''))
+                max_usd = float(usd_match.group(2).replace(',', ''))
+                # Convert USD to VND (approximate rate: 1 USD = 24,000 VND)
+                return min_usd * 24000, max_usd * 24000
+            
+            # Single USD amount
+            single_usd_pattern = r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*usd'
+            single_usd_match = re.search(single_usd_pattern, salary_text.lower())
+            if single_usd_match:
+                usd_amount = float(single_usd_match.group(1).replace(',', ''))
+                vnd_amount = usd_amount * 24000
+                return vnd_amount, vnd_amount
+        
+        # Handle VND amounts (triệu, nghìn)
+        # Convert "triệu" to actual numbers
+        salary_text = re.sub(r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*triệu', r'\g<1>000000', salary_text)
+        salary_text = re.sub(r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*nghìn', r'\g<1>000', salary_text)
+        
+        # Extract range pattern
+        range_pattern = r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*[-–—]\s*(\d+(?:,\d{3})*(?:\.\d{2})?)'
+        range_match = re.search(range_pattern, salary_text)
+        if range_match:
+            min_sal = float(range_match.group(1).replace(',', ''))
+            max_sal = float(range_match.group(2).replace(',', ''))
+            return min_sal, max_sal
+        
+        # Extract single value
+        single_pattern = r'(\d+(?:,\d{3})*(?:\.\d{2})?)'
+        single_match = re.search(single_pattern, salary_text)
+        if single_match:
+            salary = float(single_match.group(1).replace(',', ''))
+            return salary, salary
+        
+        return None, None
+    
+    def extract_vietnamese_experience(self, text: str) -> Optional[int]:
+        """
+        Extract years of experience from Vietnamese text.
+        
+        Args:
+            text: Input text (job description, experience field, etc.)
+            
+        Returns:
+            Optional[int]: Years of experience or None if not found
+        """
+        if pd.isna(text) or text == '':
+            return None
+        
+        text = str(text).lower()
+        
+        # Vietnamese experience patterns
+        vietnamese_patterns = [
+            r'(\d+)\+?\s*-\s*(\d+)\s*năm',
+            r'(\d+)\+?\s*đến\s*(\d+)\s*năm',
+            r'(\d+)\+?\s*năm\s*kinh\s*nghiệm',
+            r'(\d+)\+?\s*năm\s*exp',
+            r'(\d+)\+?\s*năm',
+            r'(\d+)\+?\s*n\b',
+            r'không\s*yêu\s*cầu',
+            r'không\s*cần\s*kinh\s*nghiệm'
+        ]
+        
+        # Check for "no experience required"
+        if any(term in text for term in ['không yêu cầu', 'không cần kinh nghiệm', 'fresh graduate', 'sinh viên mới ra trường']):
+            return 0
+        
+        # Try each pattern
+        for pattern in vietnamese_patterns:
+            match = re.search(pattern, text)
+            if match:
+                # Handle range patterns (e.g., "3-5 năm")
+                if len(match.groups()) == 2:
+                    try:
+                        min_exp = int(match.group(1))
+                        max_exp = int(match.group(2))
+                        return (min_exp + max_exp) // 2  # Return average
+                    except ValueError:
+                        continue
+                else:
+                    try:
+                        return int(match.group(1))
+                    except ValueError:
+                        continue
+        
+        return None
+    
     def clean_all_data(self, data: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:
         """
         Clean all data sources.
@@ -586,12 +747,12 @@ class DataCleaner:
         cleaned_data = {}
         
         for source, df in data.items():
-            if source == 'glassdoor':
-                cleaned_data[source] = self.clean_glassdoor_data(df)
-            elif source == 'monster':
-                cleaned_data[source] = self.clean_monster_data(df)
-            elif source == 'naukri':
-                cleaned_data[source] = self.clean_naukri_data(df)
+            if source == 'careerlink':
+                cleaned_data[source] = self.clean_careerlink_data(df)
+            elif source == 'joboko':
+                cleaned_data[source] = self.clean_joboko_data(df)
+            elif source == 'topcv':
+                cleaned_data[source] = self.clean_topcv_data(df)
             else:
                 logger.warning(f"Unknown data source: {source}")
                 cleaned_data[source] = df
@@ -615,7 +776,8 @@ class DataCleaner:
             'source', 'job_title_clean', 'company_name', 'location_clean',
             'city', 'state', 'country', 'salary_min', 'salary_max',
             'industry', 'job_description', 'rating', 'company_size',
-            'skills', 'experience'
+            'skills', 'experience', 'job_type', 'job_level', 'education',
+            'benefits', 'work_time'
         ]
         
         for source, df in data.items():

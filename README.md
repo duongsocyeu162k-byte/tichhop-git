@@ -5,7 +5,7 @@
 Dự án tích hợp và phân tích dữ liệu lớn từ 3 nguồn việc làm khác nhau để tạo ra insights về thị trường lao động toàn cầu.
 
 ### 🎯 Mục tiêu
-- Tích hợp dữ liệu từ 3 nguồn: Glassdoor, Monster.com, Naukri.com
+- Tích hợp dữ liệu từ 3 nguồn: CareerLink, Joboko, TopCV
 - Phân tích xu hướng thị trường việc làm
 - Dự đoán mức lương và yêu cầu kỹ năng
 - Tạo dashboard trực quan hóa dữ liệu
@@ -14,22 +14,22 @@ Dự án tích hợp và phân tích dữ liệu lớn từ 3 nguồn việc là
 
 | Dataset | Nguồn | Kích thước | Mô tả |
 |---------|-------|------------|-------|
-| `DataAnalyst.csv` | Glassdoor | ~73,583 records | Việc làm Data Analyst tại Mỹ |
-| `monster_com-job_sample.csv` | Monster.com | ~22,000 records | Việc làm đa dạng toàn cầu |
-| `naukri_com-job_sample.csv` | Naukri.com | ~22,000 records | Việc làm tại Ấn Độ |
+| `data_careerlink.json` | CareerLink | ~15,772 records | Việc làm IT tại Việt Nam |
+| `data_joboko.json` | Joboko | ~7,522 records | Việc làm đa dạng tại Việt Nam |
+| `data_topcv.json` | TopCV | ~2,420 records | Việc làm IT/CNTT tại Việt Nam |
 
 ### Cấu trúc Dữ liệu
-- **Glassdoor**: Job Title, Salary, Company, Location, Industry, Rating
-- **Monster**: Job Title, Description, Location, Organization, Salary, Sector
-- **Naukri**: Job Title, Company, Education, Experience, Skills, Salary
+- **CareerLink**: Tên công việc, Tên công ty, Địa điểm, Mức lương, Kinh nghiệm, Mô tả, Kỹ năng yêu cầu
+- **Joboko**: Tên công việc, Tên công ty, Địa điểm, Mức lương, Kinh nghiệm, Mô tả, Kỹ năng yêu cầu, Ngành nghề
+- **TopCV**: Tên công việc, Tên công ty, Địa điểm, Mức lương, Kinh nghiệm, Mô tả, Kỹ năng yêu cầu, Quyền lợi
 
 ## 🏗️ Kiến trúc Hệ thống
 
 ```
 📥 DATA SOURCES
-├── Glassdoor (US-focused)
-├── Monster.com (Global)
-└── Naukri.com (India-focused)
+├── CareerLink (Vietnam IT-focused)
+├── Joboko (Vietnam diverse)
+└── TopCV (Vietnam IT/CNTT)
 
 🔄 DATA INGESTION LAYER
 ├── Batch Processing: Apache Spark/PySpark
@@ -190,9 +190,9 @@ docker-compose exec jupyter jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --
 ```
 tichhop-git/
 ├── data/                    # Raw datasets
-│   ├── DataAnalyst.csv
-│   ├── monster_com-job_sample.csv
-│   └── naukri_com-job_sample.csv
+│   ├── data_careerlink.json
+│   ├── data_joboko.json
+│   └── data_topcv.json
 ├── src/                     # Source code
 │   ├── etl/                # ETL pipelines
 │   ├── analytics/          # Analytics modules

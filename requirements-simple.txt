@@ -18,7 +18,7 @@ textblob==0.17.1
 
 # Data Visualization
 matplotlib==3.7.2
-seaborn==0.12.2
+jseaborn==0.12.2
 plotly==5.15.0
 
 # Web Framework & API

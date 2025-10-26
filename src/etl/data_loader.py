@@ -7,6 +7,7 @@ databases, and APIs.
 """
 
 import pandas as pd
+import json
 import logging
 from typing import Dict, List, Optional, Union
 from pathlib import Path
@@ -65,37 +66,57 @@ class DataLoader:
             logger.error(f"Error loading CSV file {file_path}: {e}")
             return pd.DataFrame()
     
-    def load_glassdoor_data(self) -> pd.DataFrame:
-        """Load Glassdoor data with specific configuration."""
-        config = self.data_sources.get('glassdoor', {})
-        file_path = config.get('file_path', './data/DataAnalyst.csv')
+    def load_json(self, file_path: str, **kwargs) -> pd.DataFrame:
+        """
+        Load data from JSON file.
         
-        return self.load_csv(
+        Args:
+            file_path: Path to JSON file
+            **kwargs: Additional arguments for pd.read_json
+            
+        Returns:
+            pandas.DataFrame: Loaded data
+        """
+        try:
+            logger.info(f"Loading JSON file: {file_path}")
+            df = pd.read_json(file_path, **kwargs)
+            logger.info(f"Successfully loaded {len(df)} rows from {file_path}")
+            return df
+        except FileNotFoundError:
+            logger.error(f"File not found: {file_path}")
+            return pd.DataFrame()
+        except Exception as e:
+            logger.error(f"Error loading JSON file {file_path}: {e}")
+            return pd.DataFrame()
+    
+    def load_careerlink_data(self) -> pd.DataFrame:
+        """Load CareerLink data with specific configuration."""
+        config = self.data_sources.get('careerlink', {})
+        file_path = config.get('file_path', './data/data_careerlink.json')
+        
+        return self.load_json(
             file_path,
-            encoding=config.get('encoding', 'utf-8'),
-            delimiter=config.get('delimiter', ',')
+            encoding=config.get('encoding', 'utf-8')
         )
     
-    def load_monster_data(self) -> pd.DataFrame:
-        """Load Monster.com data with specific configuration."""
-        config = self.data_sources.get('monster', {})
-        file_path = config.get('file_path', './data/monster_com-job_sample.csv')
+    def load_joboko_data(self) -> pd.DataFrame:
+        """Load Joboko data with specific configuration."""
+        config = self.data_sources.get('joboko', {})
+        file_path = config.get('file_path', './data/data_joboko.json')
         
-        return self.load_csv(
+        return self.load_json(
             file_path,
-            encoding=config.get('encoding', 'utf-8'),
-            delimiter=config.get('delimiter', ',')
+            encoding=config.get('encoding', 'utf-8')
         )
     
-    def load_naukri_data(self) -> pd.DataFrame:
-        """Load Naukri.com data with specific configuration."""
-        config = self.data_sources.get('naukri', {})
-        file_path = config.get('file_path', './data/naukri_com-job_sample.csv')
+    def load_topcv_data(self) -> pd.DataFrame:
+        """Load TopCV data with specific configuration."""
+        config = self.data_sources.get('topcv', {})
+        file_path = config.get('file_path', './data/data_topcv.json')
         
-        return self.load_csv(
+        return self.load_json(
             file_path,
-            encoding=config.get('encoding', 'utf-8'),
-            delimiter=config.get('delimiter', ',')
+            encoding=config.get('encoding', 'utf-8')
         )
     
     def load_all_sources(self) -> Dict[str, pd.DataFrame]:
@@ -108,25 +129,25 @@ class DataLoader:
         data = {}
         
         try:
-            data['glassdoor'] = self.load_glassdoor_data()
-            logger.info(f"Loaded Glassdoor data: {len(data['glassdoor'])} rows")
+            data['careerlink'] = self.load_careerlink_data()
+            logger.info(f"Loaded CareerLink data: {len(data['careerlink'])} rows")
         except Exception as e:
-            logger.error(f"Error loading Glassdoor data: {e}")
-            data['glassdoor'] = pd.DataFrame()
+            logger.error(f"Error loading CareerLink data: {e}")
+            data['careerlink'] = pd.DataFrame()
         
         try:
-            data['monster'] = self.load_monster_data()
-            logger.info(f"Loaded Monster data: {len(data['monster'])} rows")
+            data['joboko'] = self.load_joboko_data()
+            logger.info(f"Loaded Joboko data: {len(data['joboko'])} rows")
         except Exception as e:
-            logger.error(f"Error loading Monster data: {e}")
-            data['monster'] = pd.DataFrame()
+            logger.error(f"Error loading Joboko data: {e}")
+            data['joboko'] = pd.DataFrame()
         
         try:
-            data['naukri'] = self.load_naukri_data()
-            logger.info(f"Loaded Naukri data: {len(data['naukri'])} rows")
+            data['topcv'] = self.load_topcv_data()
+            logger.info(f"Loaded TopCV data: {len(data['topcv'])} rows")
         except Exception as e:
-            logger.error(f"Error loading Naukri data: {e}")
-            data['naukri'] = pd.DataFrame()
+            logger.error(f"Error loading TopCV data: {e}")
+            data['topcv'] = pd.DataFrame()
         
         return data
     

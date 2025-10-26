@@ -547,13 +547,16 @@ def main():
         
         # Print MongoDB storage results
         mongodb_results = processing_results['mongodb_storage']
-        if 'error' not in mongodb_results:
+        if 'error' not in mongodb_results and 'skipped' not in mongodb_results:
             print("   ✅ Data stored in MongoDB successfully")
-            print(f"   - Raw data: {sum(mongodb_results['raw_data_stored'].values())} records")
-            print(f"   - Processed data: {sum(mongodb_results['processed_data_stored'].values())} records")
-            print(f"   - Job descriptions: {mongodb_results['job_descriptions_stored']} records")
+            if 'raw_data_stored' in mongodb_results:
+                print(f"   - Raw data: {sum(mongodb_results['raw_data_stored'].values())} records")
+            if 'processed_data_stored' in mongodb_results:
+                print(f"   - Processed data: {sum(mongodb_results['processed_data_stored'].values())} records")
+            if 'job_descriptions_stored' in mongodb_results:
+                print(f"   - Job descriptions: {mongodb_results['job_descriptions_stored']} records")
         else:
-            print(f"   ⚠️  MongoDB storage issue: {mongodb_results.get('error', 'Unknown error')}")
+            print(f"   ⚠️  MongoDB storage issue: {mongodb_results.get('error', mongodb_results.get('skipped', 'Unknown error'))}")
         
         # Combine all data
         all_data = []

@@ -30,58 +30,83 @@ class SchemaMatcher:
         self.schema_mappings = {
             # Job Title mappings
             'job_title': {
-                'glassdoor': ['Job Title', 'job_title'],
-                'monster': ['job_title', 'Job Title'],
-                'naukri': ['jobtitle', 'Job Title', 'job_title']
+                'careerlink': ['tên công việc'],
+                'joboko': ['tên công việc'],
+                'topcv': ['tên công việc']
             },
             
             # Company Name mappings
             'company_name': {
-                'glassdoor': ['Company Name', 'company_name'],
-                'monster': ['organization', 'company_name', 'Company Name'],
-                'naukri': ['company', 'Company Name', 'company_name']
+                'careerlink': ['tên công ty'],
+                'joboko': ['tên công ty'],
+                'topcv': ['tên công ty']
             },
             
             # Location mappings
             'location': {
-                'glassdoor': ['Location', 'location'],
-                'monster': ['location', 'Location'],
-                'naukri': ['joblocation_address', 'Location', 'location']
+                'careerlink': ['Địa điểm công việc'],
+                'joboko': ['địa điểm'],
+                'topcv': ['địa điểm']
             },
             
             # Salary mappings
             'salary': {
-                'glassdoor': ['Salary Estimate', 'salary'],
-                'monster': ['salary', 'Salary Estimate'],
-                'naukri': ['payrate', 'salary', 'Salary Estimate']
+                'careerlink': ['Mức lương'],
+                'joboko': ['mức lương'],
+                'topcv': ['mức lương']
             },
             
             # Industry mappings
             'industry': {
-                'glassdoor': ['Industry', 'industry'],
-                'monster': ['sector', 'industry', 'Industry'],
-                'naukri': ['industry', 'Industry', 'sector']
+                'careerlink': ['ngành nghề'],
+                'joboko': ['ngành nghề'],
+                'topcv': ['ngành nghề']
             },
             
             # Job Description mappings
             'job_description': {
-                'glassdoor': ['Job Description', 'job_description'],
-                'monster': ['job_description', 'Job Description'],
-                'naukri': ['jobdescription', 'Job Description', 'job_description']
+                'careerlink': ['mô tả công việc'],
+                'joboko': ['mô tả công việc'],
+                'topcv': ['mô tả công việc']
             },
             
             # Skills mappings
             'skills': {
-                'glassdoor': ['skills', 'Skills'],
-                'monster': ['skills', 'Skills'],
-                'naukri': ['skills', 'Skills']
+                'careerlink': ['kĩ năng yêu cầu'],
+                'joboko': ['kĩ năng yêu cầu'],
+                'topcv': ['kĩ năng yêu cầu']
             },
             
             # Experience mappings
             'experience': {
-                'glassdoor': ['experience', 'Experience'],
-                'monster': ['experience', 'Experience'],
-                'naukri': ['experience', 'Experience']
+                'careerlink': ['Kinh nghiệm'],
+                'joboko': ['kinh nghiệm'],
+                'topcv': ['kinh nghiệm']
+            },
+            
+            # Additional fields for Vietnamese job data
+            'job_type': {
+                'careerlink': ['loại công việc'],
+                'joboko': ['loại công việc'],
+                'topcv': ['loại công việc']
+            },
+            
+            'job_level': {
+                'careerlink': ['cấp bậc'],
+                'joboko': ['cấp bậc'],
+                'topcv': ['cấp bậc']
+            },
+            
+            'education': {
+                'careerlink': ['học vấn'],
+                'joboko': ['học vấn'],
+                'topcv': ['học vấn']
+            },
+            
+            'benefits': {
+                'careerlink': ['quyền lợi'],
+                'joboko': ['quyền lợi'],
+                'topcv': ['quyền lợi']
             }
         }
         
@@ -258,7 +283,7 @@ class SchemaMatcher:
             if compatibility_score >= 0.5:
                 compatible_fields += 1
         
-        compatibility_report['overall_compatibility'] = compatible_fields / len(all_fields)
+        compatibility_report['overall_compatibility'] = compatible_fields / len(all_fields) if len(all_fields) > 0 else 0.0
         
         # Data type consistency analysis
         for field in all_fields:

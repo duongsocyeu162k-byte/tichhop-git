@@ -20,66 +20,59 @@ database:
 
 # Data Sources Configuration
 data_sources:
-  glassdoor:
-    file_path: "./data/DataAnalyst.csv"
+  careerlink:
+    file_path: "./data/data_careerlink.json"
     encoding: "utf-8"
-    delimiter: ","
     columns:
-      - job_title
-      - salary_estimate
-      - job_description
-      - rating
-      - company_name
-      - location
-      - headquarters
-      - size
-      - founded
-      - type_of_ownership
-      - industry
-      - sector
-      - revenue
-      - competitors
-      - easy_apply
+      - tên công việc
+      - tên công ty
+      - Địa điểm công việc
+      - Mức lương
+      - Kinh nghiệm
+      - mô tả công việc
+      - kĩ năng yêu cầu
+      - thông tin liên hệ
+      - loại công việc
+      - cấp bậc
+      - học vấn
+      - giới tính
+      - tuổi
+      - ngành nghề
   
-  monster:
-    file_path: "./data/monster_com-job_sample.csv"
+  joboko:
+    file_path: "./data/data_joboko.json"
     encoding: "utf-8"
-    delimiter: ","
     columns:
-      - country
-      - country_code
-      - date_added
-      - has_expired
-      - job_board
-      - job_description
-      - job_title
-      - job_type
-      - location
-      - organization
-      - page_url
-      - salary
-      - sector
-      - uniq_id
+      - stt
+      - tên công việc
+      - tên công ty
+      - địa điểm
+      - mức lương
+      - kinh nghiệm
+      - mô tả công việc
+      - kĩ năng yêu cầu
+      - loại công việc
+      - cấp bậc
+      - quy mô công ty
+      - hạn nộp
+      - ngành nghề
+      - link
   
-  naukri:
-    file_path: "./data/naukri_com-job_sample.csv"
+  topcv:
+    file_path: "./data/data_topcv.json"
     encoding: "utf-8"
-    delimiter: ","
     columns:
-      - company
-      - education
-      - experience
-      - industry
-      - jobdescription
-      - jobid
-      - joblocation_address
-      - jobtitle
-      - numberofpositions
-      - payrate
-      - postdate
-      - site_name
-      - skills
-      - uniq_id
+      - stt
+      - tên công việc
+      - tên công ty
+      - địa điểm
+      - mức lương
+      - kinh nghiệm
+      - mô tả công việc
+      - kĩ năng yêu cầu
+      - quyền lợi
+      - thời gian làm việc
+      - hạn nộp
 
 # Processing Configuration
 processing:
