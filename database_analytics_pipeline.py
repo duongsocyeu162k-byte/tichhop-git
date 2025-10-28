@@ -70,6 +70,19 @@ class DatabaseManager:
         try:
             cursor = self.conn.cursor()
             
+            # Helper to coerce potentially large numeric to safe int or None
+            def _to_int_or_none(value: Any, upper_bound: int = 10_000_000_000) -> Optional[int]:
+                try:
+                    if value is None or (isinstance(value, float) and np.isnan(value)):
+                        return None
+                    v = int(float(value))
+                    if v <= 0:
+                        return None
+                    # Drop obviously unrealistic values
+                    return v if v <= upper_bound else None
+                except Exception:
+                    return None
+
             # Prepare data for insertion
             data_to_insert = []
             for _, row in df.iterrows():
@@ -82,19 +95,36 @@ class DatabaseManager:
                 location_clean = str(row.get('location_clean', ''))[:200]  # Limit to 200 chars
                 job_description = str(row.get('job_description', ''))[:1000]  # Limit to 1000 chars
                 
+                # Fallback rule: if only one side provided, set both to that value
+                salary_min = row.get('salary_min')
+                salary_max = row.get('salary_max')
+                if pd.notna(salary_min) and pd.isna(salary_max):
+                    salary_max = salary_min
+                if pd.notna(salary_max) and pd.isna(salary_min):
+                    salary_min = salary_max
+                # Sanitize values and cap to prevent DB overflow
+                salary_min = _to_int_or_none(salary_min)
+                salary_max = _to_int_or_none(salary_max)
+
                 data_tuple = (
                     row.get('source', 'unknown'),
                     str(row.get('job_title_clean', ''))[:100],  # Limit job title
                     str(row.get('company_name', ''))[:100],  # Limit company name
                     location_clean,
                     str(row.get('country', ''))[:50],  # Limit country
-                    int(row['salary_min']) if pd.notna(row.get('salary_min')) else None,
-                    int(row['salary_max']) if pd.notna(row.get('salary_max')) else None,
-                    'USD',  # Default currency
+                    salary_min,
+                    salary_max,
+                    'VND',  # Vietnamese datasets -> store as VND
                     str(row.get('industry', ''))[:100],  # Limit industry
                     job_description,
                     skills_array,
                     int(row['experience']) if pd.notna(row.get('experience')) else None,
+                    # Extra fields mapped to table columns
+                    str(row.get('job_type')) if 'job_type' in df.columns else None,
+                    str(row.get('education')) if 'education' in df.columns else None,
+                    # Preserve raw salary/experience text if table has columns
+                    str(row.get('salary_text')) if 'salary_text' in df.columns else None,
+                    str(row.get('experience_text')) if 'experience_text' in df.columns else None,
                     datetime.now()
                 )
                 data_to_insert.append(data_tuple)
@@ -104,7 +134,8 @@ class DatabaseManager:
                 INSERT INTO processed_jobs 
                 (source, job_title, company_name, location, country, 
                  salary_min, salary_max, salary_currency, industry, 
-                 job_description, skills, experience_years, created_at)
+                 job_description, skills, experience_years, job_type, 
+                 education_level, salary_text, experience_text, created_at)
                 VALUES %s
                 ON CONFLICT DO NOTHING
             """

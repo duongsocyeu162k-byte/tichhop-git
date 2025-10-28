@@ -344,6 +344,8 @@ class DataCleaner:
         
         # Clean salary
         if 'Mức lương' in cleaned_df.columns:
+            # Preserve original text
+            cleaned_df['salary_text'] = cleaned_df['Mức lương']
             salary_data = cleaned_df['Mức lương'].apply(self.extract_vietnamese_salary_range)
             cleaned_df['salary_min'] = [x[0] for x in salary_data]
             cleaned_df['salary_max'] = [x[1] for x in salary_data]
@@ -364,9 +366,12 @@ class DataCleaner:
         
         # Clean experience
         if 'Kinh nghiệm' in cleaned_df.columns:
+            # Preserve original text
+            cleaned_df['experience_text'] = cleaned_df['Kinh nghiệm']
             cleaned_df['experience'] = cleaned_df['Kinh nghiệm'].apply(self.extract_vietnamese_experience)
         else:
             cleaned_df['experience'] = None
+            cleaned_df['experience_text'] = None
         
         # Clean job type
         if 'loại công việc' in cleaned_df.columns:
@@ -404,6 +409,23 @@ class DataCleaner:
         logger.info("Cleaning Joboko data...")
         cleaned_df = df.copy()
         
+        # Normalize Joboko column names to shared Vietnamese keys used by cleaner
+        alias_map = {
+            'ten_cong_viec': 'tên công việc',
+            'ten_cong_ty': 'tên công ty',
+            'dia_diem_lam_viec': 'địa điểm',
+            'muc_luong': 'mức lương',
+            'kinh_nghiem': 'kinh nghiệm',
+            'mo_ta_chi_tiet': 'mô tả công việc',
+            'ki_nang_yeu_cau': 'kĩ năng yêu cầu',
+            'loai_cong_viec': 'loại công việc',
+            'cap_bac': 'cấp bậc',
+            'nganh_nghe': 'ngành nghề'
+        }
+        for old_col, new_col in alias_map.items():
+            if old_col in cleaned_df.columns and new_col not in cleaned_df.columns:
+                cleaned_df[new_col] = cleaned_df[old_col]
+        
         # Add source identifier
         cleaned_df['source'] = 'joboko'
         
@@ -424,12 +446,15 @@ class DataCleaner:
         
         # Clean salary
         if 'mức lương' in cleaned_df.columns:
+            # Preserve original text
+            cleaned_df['salary_text'] = cleaned_df['mức lương']
             salary_data = cleaned_df['mức lương'].apply(self.extract_vietnamese_salary_range)
             cleaned_df['salary_min'] = [x[0] for x in salary_data]
             cleaned_df['salary_max'] = [x[1] for x in salary_data]
         else:
             cleaned_df['salary_min'] = None
             cleaned_df['salary_max'] = None
+            cleaned_df['salary_text'] = None
         
         # Clean industry
         if 'ngành nghề' in cleaned_df.columns:
@@ -447,9 +472,12 @@ class DataCleaner:
         
         # Clean experience
         if 'kinh nghiệm' in cleaned_df.columns:
+            # Preserve original text
+            cleaned_df['experience_text'] = cleaned_df['kinh nghiệm']
             cleaned_df['experience'] = cleaned_df['kinh nghiệm'].apply(self.extract_vietnamese_experience)
         else:
             cleaned_df['experience'] = None
+            cleaned_df['experience_text'] = None
         
         # Clean job type
         if 'loại công việc' in cleaned_df.columns:
@@ -487,6 +515,17 @@ class DataCleaner:
         logger.info("Cleaning TopCV data...")
         cleaned_df = df.copy()
         
+        # Normalize TopCV column names to shared Vietnamese keys used by cleaner
+        alias_map = {
+            'công ty': 'tên công ty',
+            'địa điểm làm việc': 'địa điểm',
+            'lương': 'mức lương',
+            'mô tả chi tiết': 'mô tả công việc'
+        }
+        for old_col, new_col in alias_map.items():
+            if old_col in cleaned_df.columns and new_col not in cleaned_df.columns:
+                cleaned_df[new_col] = cleaned_df[old_col]
+        
         # Add source identifier
         cleaned_df['source'] = 'topcv'
         
@@ -507,12 +546,15 @@ class DataCleaner:
         
         # Clean salary
         if 'mức lương' in cleaned_df.columns:
+            # Preserve original text
+            cleaned_df['salary_text'] = cleaned_df['mức lương']
             salary_data = cleaned_df['mức lương'].apply(self.extract_vietnamese_salary_range)
             cleaned_df['salary_min'] = [x[0] for x in salary_data]
             cleaned_df['salary_max'] = [x[1] for x in salary_data]
         else:
             cleaned_df['salary_min'] = None
             cleaned_df['salary_max'] = None
+            cleaned_df['salary_text'] = None
         
         # Clean job descriptions
         if 'mô tả công việc' in cleaned_df.columns:
@@ -526,9 +568,12 @@ class DataCleaner:
         
         # Clean experience
         if 'kinh nghiệm' in cleaned_df.columns:
+            # Preserve original text
+            cleaned_df['experience_text'] = cleaned_df['kinh nghiệm']
             cleaned_df['experience'] = cleaned_df['kinh nghiệm'].apply(self.extract_vietnamese_experience)
         else:
             cleaned_df['experience'] = None
+            cleaned_df['experience_text'] = None
         
         # Clean benefits
         if 'quyền lợi' in cleaned_df.columns:
@@ -777,7 +822,9 @@ class DataCleaner:
             'city', 'state', 'country', 'salary_min', 'salary_max',
             'industry', 'job_description', 'rating', 'company_size',
             'skills', 'experience', 'job_type', 'job_level', 'education',
-            'benefits', 'work_time'
+            'benefits', 'work_time',
+            # Preserve raw text fields for downstream export/DB
+            'salary_text', 'experience_text'
         ]
         
         for source, df in data.items():

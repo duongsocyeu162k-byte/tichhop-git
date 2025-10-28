@@ -72,9 +72,9 @@ CREATE TABLE IF NOT EXISTS processed_jobs (
     company_name TEXT,
     location TEXT,
     country TEXT,
-    salary_min INTEGER,
-    salary_max INTEGER,
-    salary_currency TEXT DEFAULT 'USD',
+    salary_min BIGINT,
+    salary_max BIGINT,
+    salary_currency TEXT DEFAULT 'VND',
     job_type TEXT,
     industry TEXT,
     sector TEXT,
@@ -83,6 +83,8 @@ CREATE TABLE IF NOT EXISTS processed_jobs (
     experience_years INTEGER,
     job_description TEXT,
     sentiment_score FLOAT,
+    salary_text TEXT,
+    experience_text TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
