@@ -160,30 +160,79 @@ Dự án tích hợp và phân tích dữ liệu lớn từ 3 nguồn việc là
 - PostgreSQL 12+
 - Apache Spark 3.0+
 
-### Cài đặt Dependencies
+
+1) Khởi động cơ sở dữ liệu bằng Docker
+
 ```bash
-# Clone repository
-git clone <repository-url>
-cd tichhop-git
+docker-compose up -d postgres mongodb
 
-# Tạo virtual environment
+# Kiểm tra container
+docker ps --filter "name=job_analytics_"
+```
+
+- PostgreSQL sẽ chạy tại `localhost:5432` với DB `job_analytics`, user `admin`, password `password123`.
+- MongoDB sẽ chạy tại `localhost:27017` với user `admin`, password `password123`.
+
+2) Xác nhận PostgreSQL đã khởi tạo bảng (tùy chọn)
+
+```bash
+# Cài psql nếu cần, rồi chạy:
+PGPASSWORD=password123 psql -h 127.0.0.1 -p 5432 -U admin -d job_analytics -c "\dt"
+```
+
+Bạn sẽ thấy các bảng như `processed_jobs`, `salary_analysis`, `skills_analysis`, `market_trends` được tạo từ `config/init.sql`.
+
+3) Lưu ý xác thực MongoDB (tránh lỗi auth)
+
+- Người dùng `admin` mặc định nằm ở database `admin`. Nếu bạn gặp lỗi xác thực khi chạy pipeline, dùng chuỗi kết nối có `authSource=admin`.
+- Ví dụ chuỗi kết nối an toàn:
+
+```text
+mongodb://admin:password123@localhost:27017/job_analytics?authSource=admin
+```
+
+Nếu cần, có thể sửa trong file `database_analytics_pipeline.py` (biến `mongodb_connection_string`).
+
+4) Tạo môi trường Python và cài dependency
+
+```bash
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# hoặc
-venv\Scripts\activate  # Windows
+source venv/bin/activate  # macOS/Linux
 
-# Cài đặt dependencies
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### Chạy với Docker
-```bash
-# Build và chạy containers
-docker-compose up -d
+5) Chuẩn bị dữ liệu đầu vào
 
-# Chạy Jupyter notebook
-docker-compose exec jupyter jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+- Đảm bảo các file trong thư mục `data/` tồn tại: `data_careerlink.json`, `data_joboko.json`, `data_topcv.json`.
+- Module `src/etl/data_loader.py` sẽ đọc các nguồn này khi pipeline chạy.
+
+6) Chạy pipeline
+
+```bash
+python database_analytics_pipeline.py
 ```
+
+Pipeline sẽ:
+- Nạp và làm sạch dữ liệu (ETL) bằng `DataLoader` và `DataCleaner`
+- Lưu dữ liệu đã chuẩn hóa vào PostgreSQL bảng `processed_jobs`
+- Lưu dữ liệu thô/đã xử lý vào MongoDB (nếu bật)
+- Tạo báo cáo phân tích toàn diện và lưu kết quả vào các bảng analytics
+
+7) Kiểm tra nhanh dữ liệu sau khi chạy (tùy chọn)
+
+```bash
+# Đếm bản ghi processed_jobs
+PGPASSWORD=password123 psql -h 127.0.0.1 -p 5432 -U admin -d job_analytics -c "SELECT COUNT(*) FROM processed_jobs;"
+```
+
+8) Xử lý sự cố thường gặp
+
+- Cổng 5432/27017 đã bận: dừng dịch vụ khác hoặc đổi cổng ánh xạ trong `docker-compose.yml`.
+- Lỗi MongoDB Authentication: dùng chuỗi kết nối có `?authSource=admin` như hướng dẫn ở bước 3.
+- Thiếu thư viện Python: đảm bảo đã cài `requirements.txt` trong đúng virtualenv.
+- Lỗi kết nối DB: kiểm tra container đang chạy và network nội bộ Docker hoạt động (`docker ps`).
 
 ## 📁 Cấu trúc Thư mục
 
