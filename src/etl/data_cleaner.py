@@ -668,64 +668,178 @@ class DataCleaner:
             return parts[-1].strip()
         return ''
     
-    def extract_vietnamese_salary_range(self, salary_text: str) -> Tuple[Optional[float], Optional[float]]:
-        """
-        Extract salary range from Vietnamese salary text.
+    # def extract_vietnamese_salary_range(self, salary_text: str) -> Tuple[Optional[float], Optional[float]]:
+    #     """
+    #     Extract salary range from Vietnamese salary text.
         
-        Args:
-            salary_text: Salary text (e.g., "8 - 15 triệu", "Thương lượng")
+    #     Args:
+    #         salary_text: Salary text (e.g., "8 - 15 triệu", "Thương lượng")
             
-        Returns:
-            Tuple[Optional[float], Optional[float]]: (min_salary, max_salary) in VND
-        """
-        if pd.isna(salary_text) or salary_text == '':
-            return None, None
+    #     Returns:
+    #         Tuple[Optional[float], Optional[float]]: (min_salary, max_salary) in VND
+    #     """
+    #     if pd.isna(salary_text) or salary_text == '':
+    #         return None, None
         
-        salary_text = str(salary_text).strip()
+    #     salary_text = str(salary_text).strip()
         
-        # Handle "Thương lượng" or "Thỏa thuận"
-        if any(term in salary_text.lower() for term in ['thương lượng', 'thỏa thuận', 'negotiable']):
-            return None, None
+    #     # Handle "Thương lượng" or "Thỏa thuận"
+    #     if any(term in salary_text.lower() for term in ['thương lượng', 'thỏa thuận', 'negotiable']):
+    #         return None, None
         
-        # Handle "USD" currency
-        if 'usd' in salary_text.lower():
-            # Extract USD amounts
-            usd_pattern = r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*-\s*(\d+(?:,\d{3})*(?:\.\d{2})?)\s*usd'
-            usd_match = re.search(usd_pattern, salary_text.lower())
-            if usd_match:
-                min_usd = float(usd_match.group(1).replace(',', ''))
-                max_usd = float(usd_match.group(2).replace(',', ''))
-                # Convert USD to VND (approximate rate: 1 USD = 24,000 VND)
-                return min_usd * 24000, max_usd * 24000
+    #     # Handle "USD" currency
+    #     if 'usd' in salary_text.lower():
+    #         # Extract USD amounts
+    #         usd_pattern = r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*-\s*(\d+(?:,\d{3})*(?:\.\d{2})?)\s*usd'
+    #         usd_match = re.search(usd_pattern, salary_text.lower())
+    #         if usd_match:
+    #             min_usd = float(usd_match.group(1).replace(',', ''))
+    #             max_usd = float(usd_match.group(2).replace(',', ''))
+    #             # Convert USD to VND (approximate rate: 1 USD = 24,000 VND)
+    #             return min_usd * 24000, max_usd * 24000
             
-            # Single USD amount
-            single_usd_pattern = r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*usd'
-            single_usd_match = re.search(single_usd_pattern, salary_text.lower())
-            if single_usd_match:
-                usd_amount = float(single_usd_match.group(1).replace(',', ''))
-                vnd_amount = usd_amount * 24000
-                return vnd_amount, vnd_amount
+    #         # Single USD amount
+    #         single_usd_pattern = r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*usd'
+    #         single_usd_match = re.search(single_usd_pattern, salary_text.lower())
+    #         if single_usd_match:
+    #             usd_amount = float(single_usd_match.group(1).replace(',', ''))
+    #             vnd_amount = usd_amount * 24000
+    #             return vnd_amount, vnd_amount
         
-        # Handle VND amounts (triệu, nghìn)
-        # Convert "triệu" to actual numbers
-        salary_text = re.sub(r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*triệu', r'\g<1>000000', salary_text)
-        salary_text = re.sub(r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*nghìn', r'\g<1>000', salary_text)
+    #     # Handle VND amounts (triệu, nghìn)
+    #     # Convert "triệu" to actual numbers
+    #     salary_text = re.sub(r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*triệu', r'\g<1>000000', salary_text)
+    #     salary_text = re.sub(r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*nghìn', r'\g<1>000', salary_text)
         
-        # Extract range pattern
-        range_pattern = r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*[-–—]\s*(\d+(?:,\d{3})*(?:\.\d{2})?)'
-        range_match = re.search(range_pattern, salary_text)
-        if range_match:
-            min_sal = float(range_match.group(1).replace(',', ''))
-            max_sal = float(range_match.group(2).replace(',', ''))
-            return min_sal, max_sal
+    #     # Extract range pattern
+    #     range_pattern = r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*[-–—]\s*(\d+(?:,\d{3})*(?:\.\d{2})?)'
+    #     range_match = re.search(range_pattern, salary_text)
+    #     if range_match:
+    #         min_sal = float(range_match.group(1).replace(',', ''))
+    #         max_sal = float(range_match.group(2).replace(',', ''))
+    #         return min_sal, max_sal
         
-        # Extract single value
-        single_pattern = r'(\d+(?:,\d{3})*(?:\.\d{2})?)'
-        single_match = re.search(single_pattern, salary_text)
-        if single_match:
-            salary = float(single_match.group(1).replace(',', ''))
-            return salary, salary
+    #     # Extract single value
+    #     single_pattern = r'(\d+(?:,\d{3})*(?:\.\d{2})?)'
+    #     single_match = re.search(single_pattern, salary_text)
+    #     if single_match:
+    #         salary = float(single_match.group(1).replace(',', ''))
+    #         return salary, salary
         
+    #     return None, None
+
+    def extract_vietnamese_salary_range(self, salary_text: str,
+                                    usd_to_vnd: float = 24000.0
+                                    ) -> Tuple[Optional[float], Optional[float]]:
+        if salary_text is None or (isinstance(salary_text, float) and pd.isna(salary_text)):
+            return None, None
+
+        s = str(salary_text).strip()
+        if s == "":
+            return None, None
+
+        # Negotiable
+        if any(term in s.lower() for term in ["thương lượng", "thoả thuận", "thỏa thuận", "negotiable"]):
+            return None, None
+
+        # Chuẩn hoá dash & "to"
+        s_norm = re.sub(r"[–—−]", "-", s)
+        s_norm = re.sub(r"\s*to\s*", "-", s_norm, flags=re.IGNORECASE)
+
+        # ===== USD =====
+        if ("usd" in s_norm.lower()) or ("$" in s_norm):
+            usd_range_pat = re.compile(r"(?i)(\d[\d\.,]*)\s*(?:usd|\$)?\s*-\s*(\d[\d\.,]*)\s*(?:usd|\$)?")
+            m = usd_range_pat.search(s_norm)
+            if m:
+                a = float(re.sub(r"[^\d.]", "", m.group(1)).replace(".", ""))  # bỏ , .
+                b = float(re.sub(r"[^\d.]", "", m.group(2)).replace(".", ""))
+                return a * usd_to_vnd, b * usd_to_vnd
+
+            usd_single_pat = re.compile(r"(?i)(?:usd|\$)\s*(\d[\d\.,]*)|(\d[\d\.,]*)\s*(?:usd|\$)")
+            m = usd_single_pat.search(s_norm)
+            if m:
+                v = m.group(1) or m.group(2)
+                val = float(re.sub(r"[^\d.]", "", v).replace(".", ""))
+                val_vnd = val * usd_to_vnd
+                return val_vnd, val_vnd
+
+        # Helpers cho VND
+        def _unit_multiplier(u: Optional[str]) -> float:
+            if not u: return 1.0
+            u = u.strip().lower()
+            if u in ["triệu", "tr", "trđ", "trd", "million"]:
+                return 1_000_000.0
+            if u in ["nghìn", "ngàn", "ngan", "k"]:
+                return 1_000.0
+            return 1.0
+
+        def _parse_with_unit(num_str: str, unit: Optional[str]) -> float:
+            ns = num_str.replace(",", ".")
+            try:
+                base = float(ns)
+            except ValueError:
+                base = float(re.sub(r"[^\d\.]", "", ns).replace(".", ""))
+            return base * _unit_multiplier(unit)
+
+        def _parse_plain_number(num_str: str) -> float:
+            # Không scale; chỉ bỏ mọi ký tự không phải số
+            digits = re.sub(r"[^\d]", "", num_str)
+            return float(digits) if digits else 0.0
+
+        # ===== RANGE có/không đơn vị =====
+        vnd_unit_range = re.compile(
+            r"(?i)\b(\d[\d\.,]*)\s*(triệu|tr|trđ|trd|million|nghìn|ngàn|ngan|k)?\s*-\s*"
+            r"(\d[\d\.,]*)\s*(triệu|tr|trđ|trd|million|nghìn|ngàn|ngan|k)?\b"
+        )
+        m = vnd_unit_range.search(s_norm)
+        if m:
+            v1, u1, v2, u2 = m.groups()
+            u1_eff = u1 or u2
+            u2_eff = u2 or u1
+            if u1_eff or u2_eff:
+                # Có ít nhất một bên có đơn vị -> dùng đơn vị đó cho bên còn lại nếu thiếu
+                a = _parse_with_unit(v1, u1_eff)
+                b = _parse_with_unit(v2, u2_eff)
+                return a, b
+            else:
+                # CẢ HAI BÊN KHÔNG CÓ ĐƠN VỊ -> Áp dụng quy tắc USD/VND theo ngưỡng 1e6
+                a_raw = _parse_plain_number(v1)
+                b_raw = _parse_plain_number(v2)
+                if a_raw < 1_000_000 and b_raw < 1_000_000:
+                    return a_raw * usd_to_vnd, b_raw * usd_to_vnd  # hiểu là USD
+                else:
+                    return a_raw, b_raw  # hiểu là VND
+
+        # ===== RANGE VND thuần (fallback) =====
+        pure_range = re.compile(r"\b(\d[\d\.,]*)\s*-\s*(\d[\d\.,]*)\b")
+        m = pure_range.search(s_norm)
+        if m:
+            a_raw = _parse_plain_number(m.group(1))
+            b_raw = _parse_plain_number(m.group(2))
+            if a_raw < 1_000_000 and b_raw < 1_000_000:
+                return a_raw * usd_to_vnd, b_raw * usd_to_vnd  # không có đơn vị -> USD
+            else:
+                return a_raw, b_raw  # VND
+
+        # ===== SINGLE có đơn vị =====
+        vnd_unit_single = re.compile(r"(?i)\b(\d[\d\.,]*)\s*(triệu|tr|trđ|trd|million|nghìn|ngàn|ngan|k)\b")
+        m = vnd_unit_single.search(s_norm)
+        if m:
+            v, u = m.groups()
+            val = _parse_with_unit(v, u)
+            return val, val
+
+        # ===== SINGLE thuần (không đơn vị) =====
+        vnd_single = re.compile(r"\b(\d[\d\.,]{1,})\b")
+        m = vnd_single.search(s_norm)
+        if m:
+            raw = _parse_plain_number(m.group(1))
+            if raw < 1_000_000:
+                val = raw * usd_to_vnd  # USD
+            else:
+                val = raw              # VND
+            return val, val
+
         return None, None
     
     def extract_vietnamese_experience(self, text: str) -> Optional[int]:
