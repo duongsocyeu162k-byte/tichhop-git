@@ -1,22 +1,10 @@
-# Job Analytics Configuration File
+# Job Analytics Configuration File (Simplified - JSON-based)
 
-# Database Configuration
-database:
-  postgres:
-    host: localhost
-    port: 5432
-    database: job_analytics
-    username: admin
-    password: password123
-    pool_size: 10
-    max_overflow: 20
-  
-  mongodb:
-    host: localhost
-    port: 27017
-    database: job_analytics
-    username: admin
-    password: password123
+# Output Configuration
+output:
+  directory: "./output"
+  format: "json"
+  indent: 2
 
 # Data Sources Configuration
 data_sources:

@@ -1,14 +1,20 @@
-# 🚀 Big Data Integration Project: Job Market Analytics
+# 🚀 Job Market Analytics (Simplified - JSON-based)
 
 ## 📋 Tổng quan Dự án
 
-Dự án tích hợp và phân tích dữ liệu lớn từ 3 nguồn việc làm khác nhau để tạo ra insights về thị trường lao động toàn cầu.
+Dự án phân tích dữ liệu thị trường việc làm từ 3 nguồn khác nhau với kiến trúc đơn giản dựa trên file JSON.
 
 ### 🎯 Mục tiêu
-- Tích hợp dữ liệu từ 3 nguồn: CareerLink, Joboko, TopCV
-- Phân tích xu hướng thị trường việc làm
-- Dự đoán mức lương và yêu cầu kỹ năng
-- Tạo dashboard trực quan hóa dữ liệu
+- ✅ Tích hợp và làm sạch dữ liệu từ 3 nguồn: CareerLink, Joboko, TopCV
+- ✅ Phân tích toàn diện thị trường việc làm tại Việt Nam
+- ✅ Xuất dữ liệu đã xử lý ra file JSON (không cần database)
+- ✅ Cung cấp API và Dashboard để truy vấn và visualize dữ liệu
+
+### ✨ Điểm khác biệt phiên bản mới
+- **Không cần PostgreSQL hay MongoDB** - Tất cả dữ liệu được lưu trong file JSON
+- **Đơn giản hơn** - Dễ setup và chạy
+- **Linh hoạt** - Dữ liệu JSON dễ chia sẻ và xử lý
+- **Nhanh hơn** - Không cần quản lý database
 
 ## 📊 Dataset
 
@@ -23,311 +29,311 @@ Dự án tích hợp và phân tích dữ liệu lớn từ 3 nguồn việc là
 - **Joboko**: Tên công việc, Tên công ty, Địa điểm, Mức lương, Kinh nghiệm, Mô tả, Kỹ năng yêu cầu, Ngành nghề
 - **TopCV**: Tên công việc, Tên công ty, Địa điểm, Mức lương, Kinh nghiệm, Mô tả, Kỹ năng yêu cầu, Quyền lợi
 
-## 🏗️ Kiến trúc Hệ thống
+## 🏗️ Kiến trúc Hệ thống (Simplified)
 
 ```
-📥 DATA SOURCES
-├── CareerLink (Vietnam IT-focused)
-├── Joboko (Vietnam diverse)
-└── TopCV (Vietnam IT/CNTT)
+📥 DATA SOURCES (JSON Files)
+├── data/data_careerlink.json
+├── data/data_joboko.json
+└── data/data_topcv.json
+         ⬇️
+🔄 ETL PIPELINE (json_export_pipeline.py)
+├── Load: DataLoader
+├── Clean: DataCleaner
+├── Transform: Schema Standardization
+└── Analytics: ComprehensiveAnalyzer
+         ⬇️
+💾 OUTPUT (JSON Files)
+├── output/processed_jobs_TIMESTAMP.json       (Dữ liệu đã xử lý)
+├── output/analytics_report_TIMESTAMP.json     (Báo cáo phân tích)
+└── output/pipeline_summary.json               (Tóm tắt pipeline)
 
-🔄 DATA INGESTION LAYER
-├── Batch Processing: Apache Spark/PySpark
-├── Data Cleaning & Standardization
-└── Schema Mapping & Transformation
 
-💾 STORAGE LAYER
-├── Raw Data: HDFS/S3
-├── Processed Data: Hive/Delta Lake
-└── Analytics Ready: PostgreSQL/MongoDB
-
-⚡ PROCESSING LAYER
-├── Batch Analytics: Spark SQL, Pandas
-├── Real-time: Kafka + Spark Streaming
-└── ML Pipeline: Scikit-learn, TensorFlow
-
-📊 ANALYTICS LAYER
-├── Dashboard: Streamlit/Dash
-├── API: FastAPI/Flask
-└── Reports: Jupyter Notebooks
-```
 
 ## 🛠️ Công nghệ Sử dụng
 
 ### Core Technologies
 - **Python 3.8+**: Ngôn ngữ chính
-- **Apache Spark**: Xử lý dữ liệu lớn
-- **Pandas**: Data manipulation
+- **Pandas**: Data manipulation và analysis
 - **NumPy**: Numerical computing
 - **Scikit-learn**: Machine learning
 
-### Database & Storage
-- **PostgreSQL**: Structured data storage
-- **MongoDB**: Semi-structured data
-- **HDFS**: Distributed file system
-- **Delta Lake**: Data lake storage
+### Storage
+- **JSON Files**: Lưu trữ dữ liệu đơn giản, dễ chia sẻ
 
-### Analytics & ML
-- **NLTK/spaCy**: Natural language processing
-- **TensorFlow/PyTorch**: Deep learning
-- **Prophet**: Time series forecasting
-- **Plotly/Matplotlib**: Data visualization
-
-### Infrastructure
-- **Docker**: Containerization
-- **Jupyter**: Interactive analysis
+### Analytics & Visualization
+- **Plotly**: Interactive charts
 - **Streamlit**: Web dashboard
 - **FastAPI**: REST API
+- **Jupyter**: Interactive analysis
 
-## 📋 Kế hoạch Triển khai
-
-### Phase 1: Data Preparation (2-3 tuần)
-- [ ] **Data Cleaning & Standardization**
-  - Xử lý missing values, duplicates
-  - Standardize job titles, locations, skills
-  - Create unified schema
-
-- [ ] **Data Integration**
-  - Map common fields across datasets
-  - Create master data dictionary
-  - Implement data quality checks
-
-### Phase 2: Infrastructure Setup (1-2 tuần)
-- [ ] **Environment Setup**
-  - Docker containers for reproducibility
-  - Jupyter notebooks for analysis
-  - Database setup (PostgreSQL/MongoDB)
-
-- [ ] **Data Pipeline**
-  - ETL scripts (Python/PySpark)
-  - Data validation framework
-  - Monitoring and logging
-
-### Phase 3: Analytics Implementation (3-4 tuần)
-- [ ] **Exploratory Data Analysis**
-  - Statistical summaries
-  - Data visualization
-  - Correlation analysis
-
-- [ ] **Machine Learning Models**
-  - Salary prediction model
-  - Skills clustering
-  - Sentiment analysis
-
-### Phase 4: Visualization & Reporting (1-2 tuần)
-- [ ] **Dashboard Development**
-  - Interactive dashboards
-  - Real-time analytics
-  - Export capabilities
-
-- [ ] **Documentation & Presentation**
-  - Technical documentation
-  - Business insights report
-  - Demo preparation
-
-## 🎯 Các Bài toán Phân tích
-
-### 1. **Phân tích Xu hướng Thị trường Việc làm**
-- **Mục tiêu**: Phân tích xu hướng việc làm theo thời gian, địa lý, ngành nghề
-- **Phương pháp**: Time series analysis, Geographic analysis
-- **Kết quả**: Dashboard hiển thị hot jobs, declining jobs, regional trends
-
-### 2. **Phân tích Mức lương và Yếu tố Ảnh hưởng**
-- **Mục tiêu**: Dự đoán mức lương dựa trên skills, experience, location
-- **Phương pháp**: Regression analysis, Feature engineering
-- **Kết quả**: Salary prediction model, compensation insights
-
-### 3. **Phân tích Kỹ năng và Yêu cầu**
-- **Mục tiêu**: Xác định skills quan trọng nhất cho từng vị trí
-- **Phương pháp**: NLP, Text mining, Clustering
-- **Kết quả**: Skills taxonomy, skill gap analysis
-
-### 4. **Phân tích Cảm xúc và Mô tả Công việc**
-- **Mục tiêu**: Phân tích sentiment trong job descriptions
-- **Phương pháp**: NLP, Sentiment analysis
-- **Kết quả**: Company culture insights, job attractiveness score
-
-### 5. **Phân tích Cạnh tranh và Thị trường**
-- **Mục tiêu**: So sánh thị trường việc làm giữa các quốc gia
-- **Phương pháp**: Comparative analysis, Statistical modeling
-- **Kết quả**: Market comparison dashboard
+### Infrastructure
+- **Docker** (optional): Containerization
+- **Git**: Version control
 
 ## 🚀 Cài đặt và Chạy Dự án
 
 ### Yêu cầu Hệ thống
-- Python 3.8+
-- Docker & Docker Compose
-- PostgreSQL 12+
-- Apache Spark 3.0+
+- Python 3.8+ 
+- pip (Python package manager)
+- (Optional) Docker & Docker Compose
 
+### Cách 1: Chạy trực tiếp (Khuyên dùng - Đơn giản nhất)
 
-1) Khởi động cơ sở dữ liệu bằng Docker
-
-```bash
-docker-compose up -d postgres mongodb
-
-# Kiểm tra container
-docker ps --filter "name=job_analytics_"
-```
-
-- PostgreSQL sẽ chạy tại `localhost:5432` với DB `job_analytics`, user `admin`, password `password123`.
-- MongoDB sẽ chạy tại `localhost:27017` với user `admin`, password `password123`.
-
-2) Xác nhận PostgreSQL đã khởi tạo bảng (tùy chọn)
+**Bước 1: Cài đặt dependencies**
 
 ```bash
-# Cài psql nếu cần, rồi chạy:
-PGPASSWORD=password123 psql -h 127.0.0.1 -p 5432 -U admin -d job_analytics -c "\dt"
-```
-
-Bạn sẽ thấy các bảng như `processed_jobs`, `salary_analysis`, `skills_analysis`, `market_trends` được tạo từ `config/init.sql`.
-
-3) Lưu ý xác thực MongoDB (tránh lỗi auth)
-
-- Người dùng `admin` mặc định nằm ở database `admin`. Nếu bạn gặp lỗi xác thực khi chạy pipeline, dùng chuỗi kết nối có `authSource=admin`.
-- Ví dụ chuỗi kết nối an toàn:
-
-```text
-mongodb://admin:password123@localhost:27017/job_analytics?authSource=admin
-```
-
-Nếu cần, có thể sửa trong file `database_analytics_pipeline.py` (biến `mongodb_connection_string`).
-
-4) Tạo môi trường Python và cài dependency
-
-```bash
+# Tạo virtual environment (khuyên dùng)
 python -m venv venv
-source venv/bin/activate  # macOS/Linux
 
+# Kích hoạt virtual environment
+# Windows:
+venv\Scripts\activate
+# macOS/Linux:
+source venv/bin/activate
+
+# Cài đặt thư viện
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-5) Chuẩn bị dữ liệu đầu vào
+**Bước 2: Chuẩn bị dữ liệu**
 
-- Đảm bảo các file trong thư mục `data/` tồn tại: `data_careerlink.json`, `data_joboko.json`, `data_topcv.json`.
-- Module `src/etl/data_loader.py` sẽ đọc các nguồn này khi pipeline chạy.
+Đảm bảo các file dữ liệu có trong thư mục `data/`:
+- `data/data_careerlink.json`
+- `data/data_joboko.json`
+- `data/data_topcv.json`
 
-6) Chạy pipeline
+**Bước 3: Chạy ETL Pipeline**
 
 ```bash
-python database_analytics_pipeline.py
+python json_export_pipeline.py
 ```
 
 Pipeline sẽ:
-- Nạp và làm sạch dữ liệu (ETL) bằng `DataLoader` và `DataCleaner`
-- Lưu dữ liệu đã chuẩn hóa vào PostgreSQL bảng `processed_jobs`
-- Lưu dữ liệu thô/đã xử lý vào MongoDB (nếu bật)
-- Tạo báo cáo phân tích toàn diện và lưu kết quả vào các bảng analytics
+- ✅ Load dữ liệu từ 3 nguồn JSON
+- ✅ Làm sạch và chuẩn hóa dữ liệu
+- ✅ Chạy các phân tích toàn diện
+- ✅ Xuất kết quả ra thư mục `output/`:
+  - `processed_jobs_TIMESTAMP.json` - Dữ liệu đã xử lý
+  - `analytics_report_TIMESTAMP.json` - Báo cáo phân tích
+  - `pipeline_summary.json` - Tóm tắt pipeline
 
-7) Kiểm tra nhanh dữ liệu sau khi chạy (tùy chọn)
+### Cách 2: Chạy với Docker
+
+**Bước 1: Build và chạy containers**
 
 ```bash
-# Đếm bản ghi processed_jobs
-PGPASSWORD=password123 psql -h 127.0.0.1 -p 5432 -U admin -d job_analytics -c "SELECT COUNT(*) FROM processed_jobs;"
+# Chạy pipeline bên ngoài container
+python json_export_pipeline.py
+
+# Hoặc chạy trong container
+docker-compose exec api python json_export_pipeline.py
 ```
-
-8) Xử lý sự cố thường gặp
-
-- Cổng 5432/27017 đã bận: dừng dịch vụ khác hoặc đổi cổng ánh xạ trong `docker-compose.yml`.
-- Lỗi MongoDB Authentication: dùng chuỗi kết nối có `?authSource=admin` như hướng dẫn ở bước 3.
-- Thiếu thư viện Python: đảm bảo đã cài `requirements.txt` trong đúng virtualenv.
-- Lỗi kết nối DB: kiểm tra container đang chạy và network nội bộ Docker hoạt động (`docker ps`).
 
 ## 📁 Cấu trúc Thư mục
 
 ```
 tichhop-git/
-├── data/                    # Raw datasets
+├── data/                           # 📥 Dữ liệu nguồn (JSON)
 │   ├── data_careerlink.json
 │   ├── data_joboko.json
 │   └── data_topcv.json
-├── src/                     # Source code
-│   ├── etl/                # ETL pipelines
-│   ├── analytics/          # Analytics modules
-│   ├── models/             # ML models
-│   └── utils/              # Utility functions
-├── notebooks/              # Jupyter notebooks
-├── dashboard/              # Streamlit dashboard
-├── api/                    # FastAPI endpoints
-├── config/                 # Configuration files
-├── tests/                  # Unit tests
-├── docs/                   # Documentation
-├── docker/                 # Docker configurations
-├── requirements.txt        # Python dependencies
-├── docker-compose.yml      # Docker compose
-└── README.md              # This file
+│
+├── output/                         # 💾 Dữ liệu đã xử lý (JSON)
+│   ├── processed_jobs_*.json       # Dữ liệu đã làm sạch
+│   ├── analytics_report_*.json    # Báo cáo phân tích
+│   └── pipeline_summary.json      # Tóm tắt pipeline
+│
+├── src/                           # 📦 Source code
+│   ├── etl/                      # ETL modules
+│   │   ├── data_loader.py        # Load dữ liệu
+│   │   ├── data_cleaner.py       # Làm sạch dữ liệu
+│   │   └── schema_matcher.py     # Schema matching
+│   └── analytics/                # Analytics modules
+│       ├── comprehensive_analyzer.py
+│       ├── trend_analyzer.py
+│       ├── salary_predictor.py
+│       └── ...
+│
+├── api/                           # 🌐 FastAPI endpoints
+│   ├── simple_main.py            # API đọc từ JSON
+│   └── ...
+│
+├── notebooks/                     # 📓 Jupyter notebooks
+│   └── 01_data_exploration.ipynb
+│
+├── config/                        # ⚙️ Configuration files
+│   └── config.yaml
+│
+├── docker/                        # 🐳 Docker configurations
+│   ├── Dockerfile.api
+│   ├── Dockerfile.dashboard
+│   └── Dockerfile.jupyter
+│
+├── json_export_pipeline.py        # 🚀 Main ETL pipeline
+├── requirements.txt               # 📋 Python dependencies
+├── docker-compose.yml             # 🐳 Docker compose
+└── README.md                      # 📖 This file
 ```
 
-## 📊 Kết quả Mong đợi
+## 📊 Kết quả và Tính năng
+
+### Pipeline Output
+Sau khi chạy `json_export_pipeline.py`, bạn sẽ có:
+
+1. **processed_jobs_TIMESTAMP.json**: Dữ liệu đã làm sạch với các trường chuẩn hóa:
+   - job_title_clean, company_name, location_clean
+   - city, country, salary_min, salary_max
+   - skills, experience, industry, job_description
+   - Và nhiều trường khác...
+
+2. **analytics_report_TIMESTAMP.json**: Báo cáo phân tích toàn diện:
+   - Phân tích xu hướng (Trend Analysis)
+   - Dự đoán lương (Salary Prediction)
+   - Phân tích cảm xúc (Sentiment Analysis)
+   - Phát hiện gian lận (Fraud Detection)
+   - Và nhiều phân tích khác...
+
+3. **pipeline_summary.json**: Tóm tắt kết quả chạy pipeline
 
 ### Dashboard Features
-- **Job Market Trends**: Biểu đồ xu hướng việc làm theo thời gian
-- **Salary Analysis**: Phân tích mức lương theo ngành, địa điểm
-- **Skills Demand**: Top skills được yêu cầu nhiều nhất
-- **Geographic Insights**: So sánh thị trường việc làm theo vùng
-- **Company Analysis**: Phân tích công ty và văn hóa làm việc
+- 📋 **Phân bố công việc**: Top job titles, industries
+- 🌍 **Phân tích địa lý**: Jobs by country/city
+- 💰 **Phân tích lương**: Salary distribution, top paying jobs
+- 📈 **Xu hướng**: Source distribution, experience requirements
+- 🔧 **Phân tích kỹ năng**: Top skills demanded
+- 💾 **Export**: Download filtered data as CSV/JSON
 
 ### API Endpoints
-- `GET /api/jobs` - Lấy danh sách việc làm
-- `GET /api/salary/predict` - Dự đoán mức lương
-- `GET /api/trends` - Xu hướng thị trường
-- `GET /api/skills/analysis` - Phân tích kỹ năng
 
-## 🔧 Development
+**Cơ bản:**
+- `GET /` - Thông tin API
+- `GET /health` - Health check
+- `POST /api/reload` - Reload dữ liệu từ JSON
 
-### Code Style
-- PEP 8 compliance
-- Type hints
-- Docstrings
-- Unit tests
+**Dữ liệu:**
+- `GET /api/jobs` - Lấy danh sách việc làm (có filter)
 
-### Git Workflow
+**Phân tích:**
+- `GET /api/analytics/summary` - Tổng quan phân tích
+- `GET /api/analytics/trends` - Xu hướng thị trường
+- `GET /api/analytics/salary-prediction` - Dự đoán mức lương
+- `GET /api/analytics/skills` - Phân tích kỹ năng
+- `GET /api/analytics/geographic` - Phân tích địa lý
+
+API docs chi tiết: `http://localhost:8000/docs`
+
+## 🎯 Use Cases
+
+### 1. Phân tích thị trường việc làm
+- Xem xu hướng tuyển dụng theo ngành, địa điểm
+- So sánh mức lương giữa các vị trí
+- Phân tích kỹ năng được yêu cầu nhiều nhất
+
+### 2. Dự đoán lương
+- API `/api/analytics/salary-prediction` cung cấp dự đoán lương dựa trên:
+  - Tên công việc
+  - Địa điểm
+  - Kinh nghiệm
+  - Ngành nghề
+
+### 3. Tìm kiếm và lọc công việc
+- API `/api/jobs` cho phép filter theo nhiều tiêu chí
+- Dashboard cung cấp UI trực quan để explore data
+
+### 4. Export và share data
+- Dữ liệu JSON dễ dàng chia sẻ
+- Dashboard có chức năng download CSV/JSON
+
+## 🔧 Customization
+
+### Thêm nguồn dữ liệu mới
+1. Thêm file JSON vào thư mục `data/`
+2. Cập nhật `config/config.yaml`
+3. (Nếu cần) Thêm cleaning method trong `src/etl/data_cleaner.py`
+
+### Thêm phân tích mới
+1. Tạo module mới trong `src/analytics/`
+2. Import và sử dụng trong `json_export_pipeline.py`
+
+### Tùy chỉnh Dashboard/API
+- Sửa `dashboard/simple_app.py` để thêm charts mới
+- Sửa `api/simple_main.py` để thêm endpoints mới
+
+## 📈 Performance
+
+- **Processing Speed**: ~10-30 giây cho 25,000+ records
+- **File Size**: 
+  - Processed data: ~10-20 MB
+  - Analytics report: ~1-5 MB
+- **Dashboard Load Time**: <2 giây
+- **API Response Time**: <500ms
+
+## ❓ FAQ
+
+**Q: Tại sao không dùng database?**
+A: Để đơn giản hóa dự án. File JSON đủ cho dataset cỡ nhỏ-trung bình (<100K records), dễ chia sẻ và không cần setup database.
+
+**Q: Làm sao để update dữ liệu?**
+A: Chạy lại `python json_export_pipeline.py`. Dashboard và API sẽ tự động load file JSON mới nhất.
+
+**Q: Có thể dùng với dữ liệu lớn hơn không?**
+A: Với >100K records, nên cân nhắc dùng database (PostgreSQL) hoặc Parquet files để tối ưu performance.
+
+**Q: Làm sao để deploy lên production?**
+A: 
+1. Sử dụng Docker: `docker-compose up -d`
+2. Hoặc deploy trên cloud (Heroku, AWS, GCP, Azure)
+3. Setup cron job để chạy pipeline định kỳ
+
+**Q: File cũ trong output/ có bị ghi đè không?**
+A: Không! Mỗi lần chạy pipeline sẽ tạo file mới với timestamp khác nhau.
+
+## 🐛 Troubleshooting
+
+**Lỗi: "No module named 'src'"**
 ```bash
-# Tạo feature branch
-git checkout -b feature/new-analysis
-
-# Commit changes
-git add .
-git commit -m "Add new analysis module"
-
-# Push và tạo PR
-git push origin feature/new-analysis
+# Đảm bảo đang ở thư mục gốc của project
+cd /path/to/tichhop-git
+python json_export_pipeline.py
 ```
 
-## 📈 Metrics & KPIs
+**Lỗi: "File not found: data/data_careerlink.json"**
+```bash
+# Kiểm tra file tồn tại
+ls data/
+# Đảm bảo các file JSON có trong thư mục data/
+```
 
-- **Data Quality**: >95% data completeness
-- **Processing Speed**: <5 minutes for full pipeline
-- **Model Accuracy**: >85% for salary prediction
-- **Dashboard Load Time**: <3 seconds
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch
-3. Commit changes
-4. Push to branch
-5. Create Pull Request
+**Dashboard không hiển thị dữ liệu**
+```bash
+# Chạy pipeline trước
+python json_export_pipeline.py
+# Sau đó chạy dashboard
+streamlit run dashboard/simple_app.py
+```
 
 ## 📄 License
 
-MIT License - see LICENSE file for details
+MIT License
 
 ## 📞 Contact
 
-- **Author**: [Nguyễn Thuỳ Dương]
-- **Email**: [Duong.NT252022M@sis.hust.edu.vn]
+- **Author**: Nguyễn Thuỳ Dương
+- **Email**: Duong.NT252022M@sis.hust.edu.vn
 
 ---
 
-## 📚 References
+## 📚 Tech Stack References
 
-- [Apache Spark Documentation](https://spark.apache.org/docs/)
 - [Pandas Documentation](https://pandas.pydata.org/docs/)
 - [Streamlit Documentation](https://docs.streamlit.io/)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Plotly Documentation](https://plotly.com/python/)
 
 ---
 
-*Dự án này được phát triển cho môn Tích hợp Dữ liệu Lớn - Final Project*
+**✨ Dự án phân tích thị trường việc làm - Phiên bản đơn giản với JSON**
+
+*Last updated: 2025*

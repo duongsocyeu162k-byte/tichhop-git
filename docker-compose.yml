@@ -1,36 +1,7 @@
-# Docker Compose optimized for Job Analytics
-# Removed version field (obsolete in newer Docker Compose)
+# Docker Compose for Job Analytics (Simplified - JSON-based)
+# Removed PostgreSQL and MongoDB - Using JSON files instead
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15
-    container_name: job_analytics_postgres
-    environment:
-      POSTGRES_DB: job_analytics
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password123
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./config/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - job_analytics_network
-
-  # MongoDB Database
-  mongodb:
-    image: mongo:6.0
-    container_name: job_analytics_mongodb
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password123
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - job_analytics_network
 
   # Jupyter Notebook
   jupyter:
@@ -43,13 +14,11 @@ services:
     volumes:
       - .:/workspace
       - ./notebooks:/workspace/notebooks
+      - ./output:/workspace/output
     environment:
       - JUPYTER_ENABLE_LAB=yes
     networks:
       - job_analytics_network
-    depends_on:
-      - postgres
-      - mongodb
 
   # Streamlit Dashboard
   dashboard:
@@ -61,13 +30,10 @@ services:
       - "8501:8501"
     volumes:
       - .:/workspace
-    environment:
-      - DATABASE_URL=postgresql://admin:password123@postgres:5432/job_analytics
+      - ./output:/workspace/output
+    command: streamlit run dashboard/simple_app.py
     networks:
       - job_analytics_network
-    depends_on:
-      - postgres
-      - mongodb
 
   # FastAPI Backend
   api:
@@ -79,14 +45,10 @@ services:
       - "8000:8000"
     volumes:
       - .:/workspace
-    environment:
-      - DATABASE_URL=postgresql://admin:password123@postgres:5432/job_analytics
-      - MONGODB_URL=mongodb://admin:password123@mongodb:27017/job_analytics
+      - ./output:/workspace/output
+    command: uvicorn api.simple_main:app --host 0.0.0.0 --port 8000 --reload
     networks:
       - job_analytics_network
-    depends_on:
-      - postgres
-      - mongodb
 
   # Apache Spark (Optional for big data processing)
   # Commented out due to image availability issues
@@ -121,10 +83,6 @@ services:
   #     - job_analytics_network
   #   depends_on:
   #     - spark-master
-
-volumes:
-  postgres_data:
-  mongodb_data:
 
 networks:
   job_analytics_network:
