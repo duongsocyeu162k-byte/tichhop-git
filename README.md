@@ -38,15 +38,17 @@ Dự án phân tích dữ liệu thị trường việc làm từ 3 nguồn khá
 └── data/data_topcv.json
          ⬇️
 🔄 ETL PIPELINE (json_export_pipeline.py)
-├── Load: DataLoader
-├── Clean: DataCleaner
-├── Transform: Schema Standardization
-└── Analytics: ComprehensiveAnalyzer
+├── 1. Load: DataLoader
+├── 2. Clean & Standardize: DataCleaner (LÀM TRƯỚC)
+├── 3. Schema Matching: SchemaMatcher (trên cleaned data)
+├── 4. Data Matching: DataMatcher (trên cleaned data)
+├── 5. Combine: Merge tất cả sources
+└── 6. Export: JSONExporter
          ⬇️
 💾 OUTPUT (JSON Files)
-├── output/processed_jobs_TIMESTAMP.json       (Dữ liệu đã xử lý)
-├── output/analytics_report_TIMESTAMP.json     (Báo cáo phân tích)
-└── output/pipeline_summary.json               (Tóm tắt pipeline)
+├── output/export-TIMESTAMP.json               (Dữ liệu đã xử lý)
+├── output/matching_report_TIMESTAMP.json      (Schema & Data Matching)
+└── output/pipeline_summary.json                (Tóm tắt pipeline)
 
 
 
@@ -110,14 +112,27 @@ pip install -r requirements.txt
 python json_export_pipeline.py
 ```
 
-Pipeline sẽ:
-- ✅ Load dữ liệu từ 3 nguồn JSON
-- ✅ Làm sạch và chuẩn hóa dữ liệu
-- ✅ Chạy các phân tích toàn diện
-- ✅ Xuất kết quả ra thư mục `output/`:
-  - `processed_jobs_TIMESTAMP.json` - Dữ liệu đã xử lý
-  - `analytics_report_TIMESTAMP.json` - Báo cáo phân tích
-  - `pipeline_summary.json` - Tóm tắt pipeline
+Pipeline sẽ thực hiện theo thứ tự:
+1. ✅ **Load Data**: Đọc dữ liệu từ 3 nguồn JSON (CareerLink, Joboko, TopCV)
+2. ✅ **Clean & Standardize** ⬅️ **LÀM TRƯỚC**: Làm sạch và chuẩn hóa dữ liệu
+   - Normalize text, locations, salaries
+   - Extract structured data (experience, skills)
+   - Standardize column names
+   - Tạo standard columns (job_title_clean, company_name, location_clean, etc.)
+3. ✅ **Schema Matching**: Phân tích tương thích schema giữa các nguồn (trên cleaned data)
+   - Detect schema đã standardized
+   - So sánh schema giữa các nguồn
+   - Tạo unified schema
+   - Validate compatibility
+4. ✅ **Data Matching**: Tìm duplicates và entity resolution (trên cleaned data)
+   - Duplicate detection (chính xác hơn với normalized data)
+   - Similarity analysis
+   - Entity resolution (companies, job titles)
+5. ✅ **Combine**: Kết hợp dữ liệu từ tất cả nguồn
+6. ✅ **Export**: Xuất kết quả ra thư mục `output/`:
+   - `export-TIMESTAMP.json` - Dữ liệu đã xử lý
+   - `matching_report_TIMESTAMP.json` - Schema & Data Matching results
+   - `pipeline_summary.json` - Tóm tắt pipeline
 
 ### Cách 2: Chạy với Docker
 
@@ -141,25 +156,21 @@ tichhop-git/
 │   └── data_topcv.json
 │
 ├── output/                         # 💾 Dữ liệu đã xử lý (JSON)
-│   ├── processed_jobs_*.json       # Dữ liệu đã làm sạch
-│   ├── analytics_report_*.json    # Báo cáo phân tích
-│   └── pipeline_summary.json      # Tóm tắt pipeline
+│   ├── export-*.json               # Dữ liệu đã làm sạch và standardized
+│   ├── matching_report_*.json      # Schema & Data Matching results
+│   └── pipeline_summary.json       # Tóm tắt pipeline
 │
 ├── src/                           # 📦 Source code
 │   ├── etl/                      # ETL modules
-│   │   ├── data_loader.py        # Load dữ liệu
-│   │   ├── data_cleaner.py       # Làm sạch dữ liệu
-│   │   └── schema_matcher.py     # Schema matching
+│   │   ├── data_loader.py        # Load dữ liệu từ JSON
+│   │   ├── data_cleaner.py       # Làm sạch & chuẩn hóa dữ liệu
+│   │   └── schema_matcher.py     # Schema matching & Data matching
 │   └── analytics/                # Analytics modules
 │       ├── comprehensive_analyzer.py
 │       ├── trend_analyzer.py
 │       ├── salary_predictor.py
 │       └── ...
-│
-├── api/                           # 🌐 FastAPI endpoints
-│   ├── simple_main.py            # API đọc từ JSON
-│   └── ...
-│
+
 ├── notebooks/                     # 📓 Jupyter notebooks
 │   └── 01_data_exploration.ipynb
 │
@@ -182,47 +193,125 @@ tichhop-git/
 ### Pipeline Output
 Sau khi chạy `json_export_pipeline.py`, bạn sẽ có:
 
-1. **processed_jobs_TIMESTAMP.json**: Dữ liệu đã làm sạch với các trường chuẩn hóa:
-   - job_title_clean, company_name, location_clean
-   - city, country, salary_min, salary_max
-   - skills, experience, industry, job_description
+1. **export-TIMESTAMP.json**: Dữ liệu đã làm sạch và standardized với các trường:
+   - `source`: Nguồn dữ liệu (careerlink, joboko, topcv)
+   - `job_title_clean`: Tên công việc đã chuẩn hóa
+   - `company_name`: Tên công ty
+   - `location_clean`, `city`, `country`: Địa điểm đã chuẩn hóa
+   - `salary_min`, `salary_max`, `salary_currency`: Mức lương
+   - `skills`: Kỹ năng yêu cầu
+   - `experience`: Số năm kinh nghiệm
+   - `industry`, `job_type`, `job_description`: Thông tin chi tiết
    - Và nhiều trường khác...
 
-2. **analytics_report_TIMESTAMP.json**: Báo cáo phân tích toàn diện:
-   - Phân tích xu hướng (Trend Analysis)
-   - Dự đoán lương (Salary Prediction)
-   - Phân tích cảm xúc (Sentiment Analysis)
-   - Phát hiện gian lận (Fraud Detection)
-   - Và nhiều phân tích khác...
+2. **matching_report-TIMESTAMP.json**: Kết quả Schema & Data Matching:
+   - **Schema Analysis**:
+     - Schema compatibility giữa các nguồn
+     - Unified schema definition
+     - Field coverage analysis
+   - **Data Matching**:
+     - Duplicate records & groups
+     - Similar records analysis
+     - Entity resolution (companies, job titles)
 
-3. **pipeline_summary.json**: Tóm tắt kết quả chạy pipeline
+3. **pipeline_summary.json**: Tóm tắt kết quả chạy pipeline:
+   - Pipeline info (version, run date)
+   - Data sources statistics
+   - Schema matching metrics
+   - Data matching metrics
+   - Files generated
 
-### Dashboard Features
-- 📋 **Phân bố công việc**: Top job titles, industries
-- 🌍 **Phân tích địa lý**: Jobs by country/city
-- 💰 **Phân tích lương**: Salary distribution, top paying jobs
-- 📈 **Xu hướng**: Source distribution, experience requirements
-- 🔧 **Phân tích kỹ năng**: Top skills demanded
-- 💾 **Export**: Download filtered data as CSV/JSON
+### Quy trình Pipeline
 
-### API Endpoints
+```
+1. Load Data (DataFrame in memory)
+   ↓
+2. Clean & Standardize ⬅️ LÀM TRƯỚC (Pandas operations - NO MongoDB)
+   - Normalize text, locations, salaries
+   - Extract structured data (experience, skills)
+   - Standardize column names
+   - Tạo standard columns
+   ↓
+3. Schema Matching (Pandas operations - NO MongoDB)
+   - Detect schema từ cleaned data
+   - So sánh schema đã standardized
+   - Tạo unified schema
+   - Validate compatibility
+   ↓
+4. Data Matching (Pandas operations - NO MongoDB)
+   - Tìm duplicates trên cleaned data (chính xác hơn)
+   - Entity resolution (companies, job titles)
+   - Similarity analysis với normalized values
+   ↓
+5. Combine Data
+   - Merge tất cả sources
+   - Remove unnecessary columns
+   ↓
+6. Export to export-{timestamp}.json
+```
 
-**Cơ bản:**
-- `GET /` - Thông tin API
-- `GET /health` - Health check
-- `POST /api/reload` - Reload dữ liệu từ JSON
+**Lưu ý quan trọng:**
+- ✅ **Clean & Standardize được làm TRƯỚC** để normalize dữ liệu
+- ✅ Schema Matching và Data Matching chạy trên **cleaned data** (sau clean)
+- ✅ Sử dụng Pandas operations, **KHÔNG dùng MongoDB**
+- ✅ Data Matching chính xác hơn với dữ liệu đã normalized
+- ✅ Không cần map columns thủ công (đã có standard columns)
 
-**Dữ liệu:**
-- `GET /api/jobs` - Lấy danh sách việc làm (có filter)
+### Tính năng Pipeline
 
-**Phân tích:**
-- `GET /api/analytics/summary` - Tổng quan phân tích
-- `GET /api/analytics/trends` - Xu hướng thị trường
-- `GET /api/analytics/salary-prediction` - Dự đoán mức lương
-- `GET /api/analytics/skills` - Phân tích kỹ năng
-- `GET /api/analytics/geographic` - Phân tích địa lý
+**Schema Matching:**
+- ✅ Tự động detect schema từ cleaned data
+- ✅ So sánh tương thích schema giữa các nguồn (đã standardized)
+- ✅ Tạo unified schema definition
+- ✅ Field coverage analysis
 
-API docs chi tiết: `http://localhost:8000/docs`
+**Data Matching:**
+- ✅ Duplicate detection (exact & fuzzy matching)
+- ✅ Similarity analysis với Levenshtein distance
+- ✅ Entity resolution cho companies và job titles
+- ✅ Automatic column mapping từ raw → standard
+
+**Data Cleaning:**
+- ✅ Text normalization (remove special chars, normalize unicode)
+- ✅ Location extraction (city, province, country)
+- ✅ Salary extraction và conversion (VND, USD)
+- ✅ Experience extraction từ text
+- ✅ Skills extraction và normalization
+
+
+## 🔍 Schema Matching & Data Matching
+
+### Schema Matching
+- **Mục đích**: Phát hiện và so sánh schema giữa các nguồn dữ liệu
+- **Input**: Cleaned & standardized data
+- **Output**:
+  - Schema compatibility score
+  - Unified schema definition
+  - Field coverage analysis
+- **Technology**: Pandas operations, Levenshtein distance cho fuzzy matching
+- **Lợi ích**: Schema đã standardized nên so sánh dễ dàng và chính xác hơn
+
+### Data Matching
+- **Mục đích**: Tìm duplicates và entity resolution
+- **Input**: Cleaned & standardized data (đã có standard columns)
+- **Output**:
+  - Duplicate records & groups
+  - Similar records analysis
+  - Entity resolution (unique companies, job titles)
+- **Technology**: Pandas operations, Levenshtein ratio cho similarity
+- **Features**:
+  - ✅ Không cần map columns (đã có standard columns)
+  - ✅ Fuzzy matching chính xác hơn với normalized values
+  - ✅ Entity deduplication hiệu quả hơn
+- **Lợi ích**: Matching chính xác hơn vì values đã normalized (ví dụ: "Hà Nội" → "Ha Noi")
+
+### Lý do thứ tự hiện tại (Clean → Schema Match → Data Match)
+Pipeline chạy **Clean & Standardize TRƯỚC** Schema Matching và Data Matching:
+- ✅ **Data Matching chính xác hơn**: Values đã normalized → matching tốt hơn
+- ✅ **Không cần map columns**: Đã có standard columns (job_title_clean, company_name, etc.)
+- ✅ **Code đơn giản hơn**: Không cần logic map columns thủ công
+- ✅ **Schema Matching dễ dàng**: So sánh schema đã standardized
+- ✅ **Performance tốt**: Không cần xử lý nhiều lần
 
 ## 🎯 Use Cases
 
@@ -257,18 +346,19 @@ API docs chi tiết: `http://localhost:8000/docs`
 1. Tạo module mới trong `src/analytics/`
 2. Import và sử dụng trong `json_export_pipeline.py`
 
-### Tùy chỉnh Dashboard/API
-- Sửa `dashboard/simple_app.py` để thêm charts mới
-- Sửa `api/simple_main.py` để thêm endpoints mới
-
 ## 📈 Performance
 
-- **Processing Speed**: ~10-30 giây cho 25,000+ records
+- **Processing Speed**: 
+  - Load Data: ~1-2 giây
+  - Schema Matching: ~2-3 giây
+  - Data Matching: ~5-10 giây (depends on dataset size)
+  - Clean & Standardize: ~5-10 giây
+  - **Total**: ~15-30 giây cho 25,000+ records
 - **File Size**: 
-  - Processed data: ~10-20 MB
-  - Analytics report: ~1-5 MB
-- **Dashboard Load Time**: <2 giây
-- **API Response Time**: <500ms
+  - Export data: ~10-20 MB
+  - Matching report: ~2-5 MB
+  - Pipeline summary: ~50-100 KB
+- **Memory Usage**: ~500MB - 1GB cho dataset 25K records
 
 ## ❓ FAQ
 
@@ -277,6 +367,21 @@ A: Để đơn giản hóa dự án. File JSON đủ cho dataset cỡ nhỏ-trun
 
 **Q: Làm sao để update dữ liệu?**
 A: Chạy lại `python json_export_pipeline.py`. Dashboard và API sẽ tự động load file JSON mới nhất.
+
+**Q: Schema Matching và Data Matching có sử dụng MongoDB không?**
+A: **KHÔNG**. Cả Schema Matching và Data Matching đều chạy trên Pandas DataFrames trong memory, không sử dụng MongoDB. MongoDB chỉ được dùng để lưu trữ kết quả (nếu dùng database pipeline), không phải trong json_export_pipeline.
+
+**Q: Tại sao Clean & Standardize làm TRƯỚC Schema Matching và Data Matching?**
+A: Pipeline hiện tại làm Clean TRƯỚC vì:
+- ✅ **Data Matching chính xác hơn**: Values đã normalized → "Hà Nội", "Ha Noi", "HN" → "Ha Noi" (match được)
+- ✅ **Không cần map columns**: Đã có standard columns sẵn
+- ✅ **Code đơn giản**: Không cần logic map columns thủ công
+- ✅ **Schema Matching dễ dàng**: So sánh schema đã standardized
+
+**Q: Có thể đổi thứ tự không?**
+A: Có thể, nhưng không khuyến nghị:
+- Nếu làm Matching trước Clean: cần map columns thủ công, matching kém chính xác
+- Clean trước Matching (hiện tại): Matching chính xác hơn, code đơn giản hơn
 
 **Q: Có thể dùng với dữ liệu lớn hơn không?**
 A: Với >100K records, nên cân nhắc dùng database (PostgreSQL) hoặc Parquet files để tối ưu performance.
@@ -290,29 +395,45 @@ A:
 **Q: File cũ trong output/ có bị ghi đè không?**
 A: Không! Mỗi lần chạy pipeline sẽ tạo file mới với timestamp khác nhau.
 
-## 🐛 Troubleshooting
+## 🔄 Workflow Chi tiết
 
-**Lỗi: "No module named 'src'"**
-```bash
-# Đảm bảo đang ở thư mục gốc của project
-cd /path/to/tichhop-git
-python json_export_pipeline.py
-```
+### Step-by-Step Pipeline
 
-**Lỗi: "File not found: data/data_careerlink.json"**
-```bash
-# Kiểm tra file tồn tại
-ls data/
-# Đảm bảo các file JSON có trong thư mục data/
-```
+1. **Load Data** (1-2s)
+   - Đọc JSON files từ `data/`
+   - Convert to pandas DataFrames
+   - Total: ~6,000-25,000 records
 
-**Dashboard không hiển thị dữ liệu**
-```bash
-# Chạy pipeline trước
-python json_export_pipeline.py
-# Sau đó chạy dashboard
-streamlit run dashboard/simple_app.py
-```
+2. **Clean & Standardize**(5-10s)
+   - Clean text (normalize, remove special chars)
+   - Extract structured data (salary, experience)
+   - Standardize column names
+   - Tạo standard columns (job_title_clean, company_name, location_clean, etc.)
+   - Output: Standardized DataFrames
+
+3. **Schema Matching** (2-3s)
+   - Detect schema từ cleaned data
+   - So sánh schema đã standardized
+   - Calculate compatibility score
+   - Output: Schema analysis report
+
+4. **Data Matching** (5-10s)
+   - Find exact duplicates (chính xác hơn với normalized data)
+   - Find similar records (fuzzy matching với normalized values)
+   - Entity resolution (companies, job titles)
+   - Output: Matching report
+
+5. **Combine Data** (1-2s)
+   - Concatenate all sources
+   - Remove unnecessary columns
+   - Add source identifiers
+   - Output: Combined DataFrame
+
+6. **Export** (1-2s)
+   - Convert DataFrame → JSON
+   - Write to `output/export-TIMESTAMP.json`
+   - Write matching report
+   - Write pipeline summary
 
 ## 📄 License
 
@@ -329,7 +450,6 @@ MIT License
 
 - [Pandas Documentation](https://pandas.pydata.org/docs/)
 - [Streamlit Documentation](https://docs.streamlit.io/)
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [Plotly Documentation](https://plotly.com/python/)
 
 ---

@@ -4,7 +4,7 @@
 JSON Export Pipeline
 ====================
 
-Pipeline đơn giản để trích xuất, làm sạch và xuất dữ liệu ra file JSON.
+Pipeline để trích xuất, schema matching, data matching, làm sạch và xuất dữ liệu ra file JSON.
 """
 
 import sys
@@ -15,13 +15,15 @@ import logging
 from datetime import datetime
 from typing import Dict, Any
 
-# Add src to path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+# Add src to path - ensure absolute path for linter resolution
+_project_root = os.path.dirname(os.path.abspath(__file__))
+_src_path = os.path.join(_project_root, 'src')
+if _src_path not in sys.path:
+    sys.path.insert(0, _src_path)
 
-from etl.data_loader import DataLoader
-from etl.data_cleaner import DataCleaner
-from analytics.trend_analyzer import TrendAnalyzer
-from analytics.comprehensive_analyzer import ComprehensiveAnalyzer
+# Import ETL modules
+from etl.data_loader import DataLoader  # type: ignore
+from etl.data_cleaner import DataCleaner  # type: ignore
 
 # Configure logging
 logging.basicConfig(
@@ -60,7 +62,7 @@ class JSONExporter:
         """
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"processed_jobs_{timestamp}.json"
+            filename = f"export-{timestamp}.json"
         
         filepath = os.path.join(self.output_dir, filename)
         
@@ -79,12 +81,12 @@ class JSONExporter:
             logger.error(f"Failed to export data: {e}")
             raise
     
-    def export_analytics_report(self, report: Dict[str, Any], filename: str = None) -> str:
+    def export_matching_report(self, report: Dict[str, Any], filename: str = None) -> str:
         """
-        Xuất báo cáo phân tích ra file JSON.
+        Xuất schema matching và data matching report ra file JSON.
         
         Args:
-            report: Dictionary chứa kết quả phân tích
+            report: Dictionary chứa kết quả matching
             filename: Tên file (optional)
             
         Returns:
@@ -92,7 +94,7 @@ class JSONExporter:
         """
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"analytics_report_{timestamp}.json"
+            filename = f"matching_report_{timestamp}.json"
         
         filepath = os.path.join(self.output_dir, filename)
         
@@ -100,11 +102,11 @@ class JSONExporter:
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(report, f, ensure_ascii=False, indent=2, default=str)
             
-            logger.info(f"Exported analytics report to {filepath}")
+            logger.info(f"Exported matching report to {filepath}")
             return filepath
             
         except Exception as e:
-            logger.error(f"Failed to export analytics report: {e}")
+            logger.error(f"Failed to export matching report: {e}")
             raise
     
     def export_summary(self, summary: Dict[str, Any], filename: str = "pipeline_summary.json") -> str:
@@ -151,9 +153,11 @@ def main():
             print(f"     - {source}: {len(df):,} records")
         print()
         
-        # 2. Làm sạch và chuẩn hóa dữ liệu
+        # Initialize DataCleaner
+        cleaner = DataCleaner()
+        
+        # 2. Clean & Standardize - LÀM TRƯỚC
         print("2. Đang làm sạch và chuẩn hóa dữ liệu...")
-        cleaner = DataCleaner()  # Không cần MongoDB nữa
         cleaned_data = cleaner.clean_all_data(raw_data)
         standardized_data = cleaner.standardize_columns(cleaned_data)
         
@@ -161,8 +165,75 @@ def main():
         print(f"   ✓ Đã xử lý {total_cleaned_records:,} records")
         print()
         
-        # 3. Kết hợp dữ liệu từ tất cả nguồn
-        print("3. Đang kết hợp dữ liệu...")
+        # 3. Schema Matching - Phân tích tương thích schema trên cleaned data
+        print("3. Đang phân tích tương thích schema...")
+        schema_analysis = cleaner.analyze_schema_compatibility(standardized_data)
+        
+        # Hiển thị kết quả schema matching
+        if 'compatibility' in schema_analysis:
+            compat = schema_analysis['compatibility']
+            overall_compat = compat.get('overall_compatibility', 0) * 100
+            print(f"   ✓ Schema Compatibility: {overall_compat:.1f}%")
+            
+            # Hiển thị field compatibility
+            if 'field_compatibility' in compat:
+                compatible_fields = sum(1 for f, info in compat['field_compatibility'].items() 
+                                      if info.get('is_compatible', False))
+                total_fields = len(compat['field_compatibility'])
+                if total_fields > 0:
+                    print(f"   ✓ Compatible Fields: {compatible_fields}/{total_fields}")
+        
+        # Hiển thị unified schema
+        if 'unified_schema' in schema_analysis:
+            unified = schema_analysis['unified_schema']
+            standard_fields = len(unified.get('standard_fields', []))
+            print(f"   ✓ Standard Fields: {standard_fields} fields defined")
+        
+        print()
+        
+        # 4. Data Matching - Tìm duplicates và entity resolution trên cleaned data
+        print("4. Đang thực hiện data matching...")
+        matching_analysis = cleaner.perform_data_matching(standardized_data)
+        
+        # Hiển thị kết quả data matching
+        if 'matching_report' in matching_analysis:
+            report = matching_analysis['matching_report']
+            
+            # Duplicate analysis
+            if 'duplicate_analysis' in report:
+                dup = report['duplicate_analysis']
+                dup_count = dup.get('duplicate_count', 0)
+                dup_rate = dup.get('duplicate_rate', 0) * 100
+                print(f"   ✓ Duplicate Records: {dup_count} ({dup_rate:.1f}%)")
+                print(f"   ✓ Duplicate Groups: {dup.get('duplicate_groups', 0)} groups")
+            
+            # Similarity analysis
+            if 'similarity_analysis' in report:
+                sim = report['similarity_analysis']
+                sim_groups = sim.get('similar_groups', 0)
+                sim_rate = sim.get('similarity_rate', 0) * 100
+                print(f"   ✓ Similar Groups: {sim_groups} groups ({sim_rate:.1f}% similarity rate)")
+            
+            # Entity resolution
+            if 'entity_resolution' in matching_analysis:
+                entity_res = matching_analysis['entity_resolution']
+                if 'entity_statistics' in entity_res:
+                    stats = entity_res['entity_statistics']
+                    unique_companies = stats.get('unique_companies', 0)
+                    unique_titles = stats.get('unique_job_titles', 0)
+                    total_companies = stats.get('total_companies', 0)
+                    total_titles = stats.get('total_job_titles', 0)
+                    if total_companies > 0 or total_titles > 0:
+                        print(f"   ✓ Entity Resolution:")
+                        if total_companies > 0:
+                            print(f"      - Companies: {unique_companies}/{total_companies} unique")
+                        if total_titles > 0:
+                            print(f"      - Job Titles: {unique_titles}/{total_titles} unique")
+        
+        print()
+        
+        # 5. Kết hợp dữ liệu từ tất cả nguồn
+        print("5. Đang kết hợp dữ liệu...")
         all_data = []
         for source, df in standardized_data.items():
             if not df.empty:
@@ -185,38 +256,33 @@ def main():
             return
         print()
         
-        # 4. Tạo báo cáo phân tích
-        print("4. Đang tạo báo cáo phân tích...")
-        comprehensive_analyzer = ComprehensiveAnalyzer()
-        analytics_report = comprehensive_analyzer.generate_comprehensive_report(combined_df)
-        
-        print(f"   ✓ Đã tạo báo cáo phân tích toàn diện")
-        print()
-        
-        # 5. Xuất dữ liệu ra file JSON
-        print("5. Đang xuất dữ liệu ra file JSON...")
+        # 6. Xuất dữ liệu ra file JSON
+        print("6. Đang xuất dữ liệu ra file JSON...")
         exporter = JSONExporter(output_dir="output")
         
-        # Xuất dữ liệu đã xử lý
+        # Xuất dữ liệu đã xử lý với tên export-{timestamp}.json
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        processed_file = exporter.export_processed_data(
+        export_file = exporter.export_processed_data(
             combined_df,
-            filename=f"processed_jobs_{timestamp}.json"
+            filename=f"export-{timestamp}.json"
         )
-        print(f"   ✓ Dữ liệu đã xử lý: {processed_file}")
+        print(f"   ✓ Dữ liệu đã xử lý: {export_file}")
         
-        # Xuất báo cáo phân tích
-        analytics_file = exporter.export_analytics_report(
-            analytics_report,
-            filename=f"analytics_report_{timestamp}.json"
+        # Xuất schema matching và data matching report
+        matching_file = exporter.export_matching_report(
+            {
+                'schema_analysis': schema_analysis,
+                'data_matching': matching_analysis
+            },
+            filename=f"matching_report_{timestamp}.json"
         )
-        print(f"   ✓ Báo cáo phân tích: {analytics_file}")
+        print(f"   ✓ Schema & Data Matching Report: {matching_file}")
         
         # Tạo và xuất tóm tắt pipeline
         pipeline_summary = {
             'pipeline_info': {
                 'run_date': datetime.now().isoformat(),
-                'pipeline_version': '2.0 (JSON Export)',
+                'pipeline_version': '3.1 (Load → Clean → Schema Matching → Data Matching → Export)',
                 'output_directory': 'output/'
             },
             'data_sources': {
@@ -233,8 +299,17 @@ def main():
                 'unique_locations': combined_df['city'].nunique() if 'city' in combined_df.columns else 0,
             },
             'files_generated': {
-                'processed_data': processed_file,
-                'analytics_report': analytics_file
+                'export_file': export_file,
+                'matching_report': matching_file
+            },
+            'schema_matching': {
+                'overall_compatibility': schema_analysis.get('compatibility', {}).get('overall_compatibility', 0) * 100 if 'compatibility' in schema_analysis else 0,
+                'standard_fields_count': len(schema_analysis.get('unified_schema', {}).get('standard_fields', [])) if 'unified_schema' in schema_analysis else 0
+            },
+            'data_matching': {
+                'duplicate_count': matching_analysis.get('matching_report', {}).get('duplicate_analysis', {}).get('duplicate_count', 0) if 'matching_report' in matching_analysis else 0,
+                'duplicate_rate': matching_analysis.get('matching_report', {}).get('duplicate_analysis', {}).get('duplicate_rate', 0) * 100 if 'matching_report' in matching_analysis else 0,
+                'similar_groups': matching_analysis.get('matching_report', {}).get('similarity_analysis', {}).get('similar_groups', 0) if 'matching_report' in matching_analysis else 0
             }
         }
         
@@ -242,7 +317,7 @@ def main():
         print(f"   ✓ Tóm tắt pipeline: {summary_file}")
         print()
         
-        # 6. Hiển thị thống kê
+        # 7. Hiển thị thống kê
         print("=" * 60)
         print("Tóm tắt Pipeline")
         print("=" * 60)
@@ -252,33 +327,18 @@ def main():
         print(f"Số lượng địa điểm:         {pipeline_summary['statistics']['unique_locations']:,}")
         print()
         
-        # Hiển thị key metrics từ analytics
-        if 'analytics_summary' in analytics_report:
-            summary = analytics_report['analytics_summary']
-            print("Kết quả phân tích:")
-            print("-" * 40)
-            
-            # Modules status
-            if 'modules_status' in summary:
-                print("Trạng thái các module:")
-                for module, status in summary['modules_status'].items():
-                    status_icon = "✓" if status == 'success' else "✗"
-                    print(f"  {status_icon} {module.replace('_', ' ').title()}")
-                print()
-            
-            # Key metrics
-            if 'key_metrics' in summary:
-                metrics = summary['key_metrics']
-                print("Các chỉ số chính:")
-                if 'anomaly_rate' in metrics:
-                    print(f"  • Tỷ lệ bất thường:       {metrics['anomaly_rate']:.1f}%")
-                if 'fraud_rate' in metrics:
-                    print(f"  • Tỷ lệ gian lận:         {metrics['fraud_rate']:.1f}%")
-                if 'positive_sentiment' in metrics:
-                    print(f"  • Cảm xúc tích cực:       {metrics['positive_sentiment']:.1f}%")
-                if 'salary_model_performance' in metrics:
-                    print(f"  • Hiệu suất mô hình lương: {metrics['salary_model_performance']:.3f}")
-                print()
+        # Hiển thị schema matching và data matching summary
+        print("Schema Matching & Data Matching:")
+        print("-" * 40)
+        if 'schema_matching' in pipeline_summary:
+            sm = pipeline_summary['schema_matching']
+            print(f"  • Schema Compatibility: {sm.get('overall_compatibility', 0):.1f}%")
+            print(f"  • Standard Fields: {sm.get('standard_fields_count', 0)} fields")
+        if 'data_matching' in pipeline_summary:
+            dm = pipeline_summary['data_matching']
+            print(f"  • Duplicate Records: {dm.get('duplicate_count', 0):,} ({dm.get('duplicate_rate', 0):.1f}%)")
+            print(f"  • Similar Groups: {dm.get('similar_groups', 0)} groups")
+        print()
         
         print("=" * 60)
         print("✓ Pipeline hoàn tất thành công!")
@@ -296,4 +356,3 @@ def main():
 
 if __name__ == "__main__":
     exit(main())
-
